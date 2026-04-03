@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지휘관 자격인증제 평가</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f5f7;
+      color: #222;
+    }
+
+    .topbar {
+      background: #1f4e79;
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .topbar h1 {
+      margin: 0 0 10px 0;
+      font-size: 22px;
+      line-height: 1.3;
+    }
+
+    .menu {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .menu-btn {
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #d9e6f2;
+      color: #123;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .menu-btn.active {
+      background: #ffcc66;
+    }
+
+    .menu-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 14px 12px 120px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .token-box {
+      background: #fff7e6;
+      border: 1px solid #f0d28a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+      font-size: 14px;
+      word-break: keep-all;
+    }
+
+    .title-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .sheet-title {
+      margin: 0;
+      font-size: 24px;
+      color: #1f4e79;
+      line-height: 1.35;
+    }
+
+    .score-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .score-box {
+      background: #eef3f8;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      color: #1f4e79;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .notice {
+      color: #666;
+      margin-bottom: 14px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .score-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .score-item {
+      border: 1px solid #d9e1e8;
+      border-radius: 14px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .score-item-head {
+      background: #f7fafc;
+      border-bottom: 1px solid #e3e9ee;
+      padding: 12px 14px;
+    }
+
+    .category-badge {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #1f4e79;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .behavior-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.45;
+      margin-bottom: 8px;
+      color: #1c2733;
+      word-break: keep-all;
+    }
+
+    .score-meta {
+      font-size: 13px;
+      color: #666;
+      font-weight: 700;
+    }
+
+    .grade-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 14px;
+    }
+
+    .grade-option {
+      position: relative;
+    }
+
+    .grade-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .grade-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      border-radius: 12px;
+      border: 2px solid #d0d8df;
+      background: #fff;
+      font-weight: 800;
+      font-size: 18px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .grade-option input:checked + .grade-label {
+      border-color: #1f4e79;
+      background: #e8f1fa;
+      color: #1f4e79;
+    }
+
+    .grade-option.high input:checked + .grade-label {
+      border-color: #2e7d32;
+      background: #eaf6ec;
+      color: #2e7d32;
+    }
+
+    .grade-option.mid input:checked + .grade-label {
+      border-color: #ef6c00;
+      background: #fff3e8;
+      color: #ef6c00;
+    }
+
+    .grade-option.low input:checked + .grade-label {
+      border-color: #c62828;
+      background: #fdecec;
+      color: #c62828;
+    }
+
+    .comment-box {
+      margin-top: 18px;
+    }
+
+    .comment-box label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .comment-box textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cfd8df;
+      border-radius: 12px;
+      font-size: 15px;
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .status-text {
+      margin-top: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #d8dee5;
+      padding: 10px 12px;
+    }
+
+    .actions {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+    }
+
+    button.action-btn {
+      border: none;
+      min-height: 52px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 16px;
+      color: white;
+      background: #1f4e79;
+    }
+
+    button.action-btn.secondary {
+      background: #6c757d;
+    }
+
+    button.action-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 640px) {
+      .topbar h1 {
+        font-size: 20px;
+      }
+
+      .sheet-title {
+        font-size: 20px;
+      }
+
+      .score-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .grade-buttons {
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .grade-label {
+        min-height: 50px;
+        font-size: 17px;
+      }
+
+      .actions {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>지휘관 자격인증제 평가</h1>
+    <nav class="menu">
+      <button class="menu-btn active" data-level="basic">초급 평가표</button>
+      <button class="menu-btn" data-level="intermediate">중급 평가표</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+
+      <div class="title-row">
+        <h2 id="sheetTitle" class="sheet-title">초급 실기평가표</h2>
+        <div class="score-summary">
+          <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
+          <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+        </div>
+      </div>
+
+      <div class="notice">
+        각 항목은 상 / 중 / 하 중 하나만 선택할 수 있습니다.
+      </div>
+
+      <div id="scoreTable"></div>
+
+      <div class="comment-box">
+        <label for="comment">비고 / 메모</label>
+        <textarea id="comment" placeholder="필요한 경우만 입력"></textarea>
+      </div>
+
+      <p id="statusText" class="status-text"></p>
+    </section>
+  </main>
+
+  <div class="bottom-bar">
+    <div class="actions">
+      <button id="resetBtn" class="action-btn secondary">초기화</button>
+      <button id="submitBtn" class="action-btn">제출</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
