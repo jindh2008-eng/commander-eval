@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지휘관 자격인증제 평가</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f5f7;
+      color: #222;
+    }
+    .topbar {
+      background: #1f4e79;
+      color: white;
+      padding: 18px 20px;
+    }
+    .topbar h1 {
+      margin: 0 0 12px 0;
+      font-size: 30px;
+    }
+    .menu {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .menu-btn {
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #d9e6f2;
+      color: #123;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .menu-btn.active {
+      background: #ffcc66;
+    }
+    .menu-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .container {
+      max-width: 1600px;
+      margin: 24px auto;
+      padding: 0 16px 40px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .sheet-title {
+      margin: 0;
+      font-size: 28px;
+      color: #1f4e79;
+    }
+    .score-summary {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .score-box {
+      background: #eef3f8;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: #1f4e79;
+    }
+    .token-box {
+      background: #fff7e6;
+      border: 1px solid #f0d28a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+    .table-wrap { overflow-x: auto; }
+    .score-table {
+      width: 100%;
+      min-width: 1100px;
+      border-collapse: collapse;
+    }
+    .score-table th,
+    .score-table td {
+      border: 1px solid #d8dee5;
+      padding: 10px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    .score-table th {
+      background: #eef3f8;
+      white-space: nowrap;
+    }
+    .category-cell {
+      background: #fafafa;
+      font-weight: 700;
+      width: 150px;
+    }
+    .behavior-cell {
+      text-align: left;
+    }
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button.action-btn {
+      border: none;
+      padding: 11px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      color: white;
+      background: #1f4e79;
+    }
+    button.action-btn.secondary {
+      background: #6c757d;
+    }
+    button.action-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .status-text {
+      margin-top: 14px;
+      font-weight: 700;
+    }
+    .comment-box {
+      margin-top: 18px;
+    }
+    .comment-box label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .comment-box textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cfd8df;
+      border-radius: 8px;
+      font-size: 14px;
+      min-height: 90px;
+    }
+    .radio-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .radio-wrap input {
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+    .notice {
+      color: #666;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>지휘관 자격인증제 평가</h1>
+    <nav class="menu">
+      <button class="menu-btn active" data-level="basic">초급 평가표</button>
+      <button class="menu-btn" data-level="intermediate">중급 평가표</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+
+      <div class="title-row">
+        <h2 id="sheetTitle" class="sheet-title">초급 실기평가표</h2>
+        <div class="score-summary">
+          <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
+          <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+        </div>
+      </div>
+
+      <div class="notice">
+        각 항목은 상 / 중 / 하 중 하나만 선택할 수 있습니다.
+      </div>
+
+      <div id="scoreTable"></div>
+
+      <div class="comment-box">
+        <label for="comment">비고 / 메모</label>
+        <textarea id="comment" placeholder="필요한 경우만 입력"></textarea>
+      </div>
+
+      <div class="actions">
+        <button id="resetBtn" class="action-btn secondary">초기화</button>
+        <button id="submitBtn" class="action-btn">제출</button>
+      </div>
+
+      <p id="statusText" class="status-text"></p>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
