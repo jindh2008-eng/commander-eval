@@ -26,7 +26,7 @@ const db = getFirestore(app);
 
 /* 반드시 본인 관리자 이메일로 수정 */
 const ADMIN_EMAILS = [
-  "youradmin@gmail.com"
+  "jindh2008@gmail.com"
 ];
 
 const authStatusTextEl = document.getElementById("authStatusText");
