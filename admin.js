@@ -23,6 +23,8 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const detailFilterEl = document.getElementById("detailFilter");
+const tokenDetailEl = document.getElementById("tokenDetail");
 
 const ADMIN_EMAILS = [
   "jindh2008@gmail.com"
@@ -170,6 +172,55 @@ function levelLabel(level, levelTitle) {
   if (level === "intermediate") return "중급";
   return level || "-";
 }
+function composeCourseLabel(level, detail, levelTitle) {
+  const base = levelLabel(level, levelTitle);
+  const suffix = String(detail || "").trim();
+  return suffix ? `${base} / ${suffix}` : base;
+}
+
+function populateDetailFilterOptions() {
+  const selectedLevel = levelFilterEl.value;
+  const currentValue = detailFilterEl.value;
+
+  let source = [...allEvaluations];
+
+  if (selectedLevel !== "all") {
+    source = source.filter((item) => item.level === selectedLevel);
+  }
+
+  const detailSet = new Set();
+  source.forEach((item) => {
+    const detail = String(item.levelDetail || "").trim();
+    if (detail) detailSet.add(detail);
+  });
+
+  detailFilterEl.innerHTML =
+    `<option value="all">전체</option>` +
+    [...detailSet]
+      .sort((a, b) => a.localeCompare(b, "ko"))
+      .map((detail) => `<option value="${escapeHtml(detail)}">${escapeHtml(detail)}</option>`)
+      .join("");
+
+  const exists = [...detailFilterEl.options].some((opt) => opt.value === currentValue);
+  detailFilterEl.value = exists ? currentValue : "all";
+}
+
+function enrichEvaluationsWithTokenDetails() {
+  const tokenMap = new Map(allTokens.map((item) => [item.id, item]));
+
+  allEvaluations = allEvaluations.map((item) => {
+    if (item.levelDetail) return item;
+
+    const tokenId = item.token || item.submissionId || "";
+    const tokenInfo = tokenMap.get(tokenId);
+
+    return {
+      ...item,
+      levelDetail: tokenInfo?.levelDetail || ""
+    };
+  });
+}
+
 
 function getBaseAppUrl() {
   const url = new URL(window.location.href);
@@ -558,7 +609,7 @@ function renderDeleteTable(data) {
     return `
       <tr>
         <td>${formatDateTime(item.submittedAt || item.createdAt)}</td>
-        <td>${escapeHtml(levelLabel(item.level, item.levelTitle))}</td>
+        <td>${escapeHtml(composeCourseLabel(item.level, item.levelDetail, item.levelTitle))}</td>
         <td>${escapeHtml(item.token || item.submissionId || "-")}</td>
         <td>${escapeHtml(item.totalScore)}</td>
         <td class="text-left">${escapeHtml(item.comment || "-")}</td>
@@ -593,7 +644,7 @@ function renderDetailList(data) {
     <div class="record-item ${item.id === selectedEvaluationId ? "active" : ""}" data-id="${escapeHtml(item.id)}">
       <div class="record-title">${escapeHtml(item.token || item.submissionId || "-")}</div>
       <div class="record-sub">
-        ${escapeHtml(levelLabel(item.level, item.levelTitle))}<br>
+        ${escapeHtml(composeCourseLabel(item.level, item.levelDetail, item.levelTitle))}<br>
         제출: ${escapeHtml(formatDateTime(item.submittedAt || item.createdAt))}<br>
         총점: ${escapeHtml(item.totalScore)} / ${escapeHtml(item.totalPossible || "-")}
       </div>
@@ -638,7 +689,7 @@ function renderDetail(item) {
     <div class="detail-meta">
       <div class="meta-item">
         <div class="meta-label">과정</div>
-        <div class="meta-value">${escapeHtml(levelLabel(item.level, item.levelTitle))}</div>
+        <div class="meta-value">${escapeHtml(composeCourseLabel(item.level, item.levelDetail, item.levelTitle))}</div>
       </div>
       <div class="meta-item">
         <div class="meta-label">토큰</div>
@@ -686,6 +737,7 @@ function updateAnalysis(data) {
 
 function applyFilters() {
   const levelFilter = levelFilterEl.value;
+  const detailFilter = detailFilterEl.value;
   const sortFilter = sortFilterEl.value;
   const keyword = searchInputEl.value.trim().toLowerCase();
 
@@ -695,12 +747,17 @@ function applyFilters() {
     result = result.filter((item) => item.level === levelFilter);
   }
 
+  if (detailFilter !== "all") {
+    result = result.filter((item) => String(item.levelDetail || "").trim() === detailFilter);
+  }
+
   if (keyword) {
     result = result.filter((item) => {
       const text = [
         item.token,
         item.submissionId,
         item.levelTitle,
+        item.levelDetail,
         item.comment
       ].join(" ").toLowerCase();
       return text.includes(keyword);
@@ -737,6 +794,7 @@ async function loadEvaluations() {
     }));
 
     calculateSummary(allEvaluations);
+    populateDetailFilterOptions();
     applyFilters();
   } catch (error) {
     console.error(error);
@@ -763,7 +821,7 @@ function renderTokenTable(tokens) {
     return `
       <tr>
         <td>${escapeHtml(item.id)}</td>
-        <td>${escapeHtml(levelLabel(item.allowedLevel))}</td>
+        <td>${escapeHtml(composeCourseLabel(item.allowedLevel, item.levelDetail))}</td>
         <td>
           <span class="badge ${item.isUsed ? "badge-used" : "badge-unused"}">
             ${item.isUsed ? "사용됨" : "미사용"}
@@ -803,6 +861,9 @@ async function loadTokens() {
 
     allTokens.sort((a, b) => a.id.localeCompare(b.id, "ko"));
     renderTokenTable(allTokens);
+    enrichEvaluationsWithTokenDetails();
+    populateDetailFilterOptions();
+    applyFilters();
     tokenStatusTextEl.textContent = `총 ${allTokens.length}개의 토큰을 불러왔습니다.`;
   } catch (error) {
     console.error(error);
@@ -828,9 +889,9 @@ async function getNextSequence(level) {
 
   return maxSeq + 1;
 }
-
 async function generateTokens() {
   const level = tokenLevelEl.value;
+  const detail = tokenDetailEl.value.trim();
   const count = Number(tokenCountEl.value);
 
   if (!count || count < 1) {
@@ -849,11 +910,13 @@ async function generateTokens() {
       await setDoc(doc(db, "inviteTokens", tokenId), {
         token: tokenId,
         allowedLevel: level,
+        levelDetail: detail,
         isUsed: false,
         createdAt: new Date()
       });
     }
 
+    tokenDetailEl.value = "";
     await loadTokens();
     alert(`${count}개의 토큰을 생성했습니다.`);
   } catch (error) {
@@ -864,6 +927,7 @@ async function generateTokens() {
     generateTokensBtnEl.textContent = "토큰 생성";
   }
 }
+
 
 async function copyAllLinks() {
   if (!allTokens.length) {
@@ -973,7 +1037,12 @@ function setupSidebarMenu() {
 }
 
 function bindStaticEvents() {
-  levelFilterEl.addEventListener("change", applyFilters);
+  levelFilterEl.addEventListener("change", () => {
+    populateDetailFilterOptions();
+    applyFilters();
+  });
+
+  detailFilterEl.addEventListener("change", applyFilters);
   sortFilterEl.addEventListener("change", applyFilters);
   searchInputEl.addEventListener("input", applyFilters);
   refreshBtnEl.addEventListener("click", loadEvaluations);
