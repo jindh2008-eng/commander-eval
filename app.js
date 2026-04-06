@@ -51,7 +51,7 @@ const sheetData = {
 
   intermediate: {
     title: "중급 실기평가표",
-    total: 144,
+    total: 200,
     items: [
       { category: "상황평가", behavior: "출동중 정보수집 및 임무공유", score: 3 },
       { category: "상황평가", behavior: "선착대장 활동지원", score: 5 },
@@ -113,6 +113,7 @@ const resetBtn = document.getElementById("resetBtn");
 const submitBtn = document.getElementById("submitBtn");
 const statusTextEl = document.getElementById("statusText");
 const tokenInfoEl = document.getElementById("tokenInfo");
+const topSummaryBar = document.getElementById("topSummaryBar");
 
 function detectViewMode() {
   const isTouchDevice =
@@ -134,9 +135,10 @@ function setUiEnabled(enabled) {
   document.querySelectorAll(".item-grade").forEach((radio) => {
     radio.disabled = !enabled;
   });
-  commentEl.disabled = !enabled;
-  resetBtn.disabled = !enabled;
-  submitBtn.disabled = !enabled;
+
+  if (commentEl) commentEl.disabled = !enabled;
+  if (resetBtn) resetBtn.disabled = !enabled;
+  if (submitBtn) submitBtn.disabled = !enabled;
 }
 
 function escapeHtml(value) {
@@ -162,46 +164,63 @@ function gradeLabelToKorean(grade) {
 
 function calculateCurrentScore() {
   let total = 0;
+
   document.querySelectorAll(".item-grade:checked").forEach((radio) => {
     total += gradeLabelToScore(Number(radio.dataset.score), radio.value);
   });
+
   currentScoreEl.textContent = total;
   return total;
 }
 
 function groupItemsByCategory(items) {
   const grouped = {};
+
   items.forEach((item, index) => {
     if (!grouped[item.category]) grouped[item.category] = [];
     grouped[item.category].push({ ...item, index });
   });
+
   return grouped;
 }
 
 function saveSelections() {
   const selections = {};
+
   document.querySelectorAll(".item-grade:checked").forEach((radio) => {
     selections[radio.name] = radio.value;
   });
+
   window.__savedSelections = selections;
 }
 
 function restoreSelections() {
   if (!window.__savedSelections) return;
+
   Object.entries(window.__savedSelections).forEach(([name, value]) => {
     const target = document.querySelector(`input[name="${name}"][value="${value}"]`);
     if (target) target.checked = true;
   });
+
   calculateCurrentScore();
+}
+
+function updateStickyOffset() {
+  if (!topSummaryBar) return;
+
+  const rect = topSummaryBar.getBoundingClientRect();
+  const height = Math.ceil(rect.height);
+
+  document.documentElement.style.setProperty("--top-summary-height", `${height}px`);
 }
 
 function renderTable(level) {
   const data = sheetData[level];
-  sheetTitle.textContent = `${data.title}`;
+
+  sheetTitle.textContent = data.title;
   maxTotalScoreEl.textContent = data.total;
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
-  commentEl.value = commentEl.value || "";
 
   const grouped = groupItemsByCategory(data.items);
 
@@ -209,6 +228,7 @@ function renderTable(level) {
     <div class="score-list">
       ${Object.entries(grouped).map(([category, items]) => {
         const isCollapsed = viewMode === "app" && collapsedCategories.has(category);
+
         return `
           <div class="group-card ${isCollapsed ? "collapsed" : ""}" data-category="${escapeHtml(category)}">
             <button
@@ -217,7 +237,7 @@ function renderTable(level) {
               data-category="${escapeHtml(category)}"
             >
               <span>${escapeHtml(category)}</span>
-              <span class="group-arrow">${viewMode === "app" ? "▾" : ""}</span>
+              <span class="group-arrow">${viewMode === "app" ? (isCollapsed ? "▸" : "▾") : ""}</span>
             </button>
 
             <div class="group-body">
@@ -274,27 +294,33 @@ function renderTable(level) {
   scoreTableEl.innerHTML = html;
 
   document.querySelectorAll(".item-grade").forEach((radio) => {
-    radio.addEventListener("change", calculateCurrentScore);
+    radio.addEventListener("change", () => {
+      calculateCurrentScore();
+      updateStickyOffset();
+    });
   });
 
-  if (viewMode === "app") {
-    document.querySelectorAll(".group-header.app-collapsible").forEach((header) => {
-      header.addEventListener("click", () => {
-        const category = header.dataset.category;
-        saveSelections();
+  document.querySelectorAll(".group-header.app-collapsible").forEach((header) => {
+    header.addEventListener("click", () => {
+      const category = header.dataset.category;
 
-        if (collapsedCategories.has(category)) {
-          collapsedCategories.delete(category);
-        } else {
-          collapsedCategories.add(category);
-        }
+      saveSelections();
 
-        renderTable(currentLevel);
-        restoreSelections();
-        setUiEnabled(tokenValidated);
-      });
+      if (collapsedCategories.has(category)) {
+        collapsedCategories.delete(category);
+      } else {
+        collapsedCategories.add(category);
+      }
+
+      renderTable(currentLevel);
+      restoreSelections();
+      setUiEnabled(tokenValidated);
+
+      requestAnimationFrame(updateStickyOffset);
     });
-  }
+  });
+
+  requestAnimationFrame(updateStickyOffset);
 }
 
 function setViewMode(mode) {
@@ -308,13 +334,17 @@ function setViewMode(mode) {
   renderTable(currentLevel);
   restoreSelections();
   setUiEnabled(tokenValidated);
+
+  requestAnimationFrame(updateStickyOffset);
 }
 
 function validateAllSelected() {
   const itemCount = sheetData[currentLevel].items.length;
+
   for (let i = 0; i < itemCount; i++) {
     if (!document.querySelector(`input[name="item_${i}"]:checked`)) return false;
   }
+
   return true;
 }
 
@@ -322,6 +352,7 @@ function collectItemResults() {
   return sheetData[currentLevel].items.map((item, index) => {
     const checked = document.querySelector(`input[name="item_${index}"]:checked`);
     const selectedGrade = checked.value;
+
     return {
       category: item.category,
       behavior: item.behavior,
@@ -337,10 +368,13 @@ function clearSelections() {
   document.querySelectorAll(".item-grade").forEach((radio) => {
     radio.checked = false;
   });
+
   commentEl.value = "";
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
   window.__savedSelections = {};
+
+  updateStickyOffset();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -389,6 +423,8 @@ async function validateTokenAndSetup() {
 
   tokenInfoEl.textContent = `토큰 확인 완료 · ${currentLevel === "basic" ? "초급" : "중급"} 평가 진행 가능`;
   tokenInfoEl.style.color = "#7a5a00";
+
+  requestAnimationFrame(updateStickyOffset);
 }
 
 resetBtn.addEventListener("click", clearSelections);
@@ -452,6 +488,8 @@ submitBtn.addEventListener("click", async () => {
     tokenInfoEl.textContent = "제출 완료된 링크입니다. 재제출은 허용되지 않습니다.";
     tokenInfoEl.style.color = "green";
     setUiEnabled(false);
+
+    updateStickyOffset();
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
     console.error(error);
@@ -466,12 +504,18 @@ submitBtn.addEventListener("click", async () => {
 
 window.addEventListener("resize", () => {
   const nextMode = detectViewMode();
+
   if (nextMode !== viewMode && currentLevel) {
     setViewMode(nextMode);
+  } else {
+    updateStickyOffset();
   }
 });
 
+window.addEventListener("load", updateStickyOffset);
+
 setUiEnabled(false);
+
 validateTokenAndSetup().catch((error) => {
   console.error(error);
   tokenInfoEl.textContent = "토큰 확인 중 오류가 발생했습니다.";
