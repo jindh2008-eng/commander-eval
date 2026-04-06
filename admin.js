@@ -24,10 +24,80 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* 반드시 본인 관리자 이메일로 수정 */
 const ADMIN_EMAILS = [
   "jindh2008@gmail.com"
 ];
+
+const EVALUATION_ORDER = {
+  basic: [
+    { category: "상황평가", behavior: "출동중 정보수집 및 임무공유" },
+    { category: "상황평가", behavior: "출동중 상황전파" },
+    { category: "상황평가", behavior: "최초 상황보고, 지휘형태 결정 및 지휘권 선언" },
+    { category: "상황평가", behavior: "인명정보 취득 및 전파" },
+    { category: "상황평가", behavior: "추가 소방력 판단" },
+
+    { category: "대응활동", behavior: "차량배치" },
+    { category: "대응활동", behavior: "표준대응활동" },
+    { category: "대응활동", behavior: "확대대 임무부여" },
+    { category: "대응활동", behavior: "위기대응 및 진행상황 관리" },
+    { category: "대응활동", behavior: "화재현장요소 파악 관리" },
+    { category: "대응활동", behavior: "단위지휘관 임무수행" },
+
+    { category: "화재전술", behavior: "소방용수" },
+    { category: "화재전술", behavior: "문개방 및 내부진입" },
+    { category: "화재전술", behavior: "수관전개 주수 및 관창배치" },
+    { category: "화재전술", behavior: "배연" },
+
+    { category: "의사교환", behavior: "무전교신 원칙" },
+    { category: "의사교환", behavior: "정보 전달력" },
+    { category: "의사교환", behavior: "지휘팀장 도착 후 상황보고" },
+
+    { category: "핵심목표", behavior: "인명구조 목표달성의 적절성" },
+    { category: "핵심목표", behavior: "출동대 안전관리" }
+  ],
+  intermediate: [
+    { category: "상황평가", behavior: "출동중 정보수집 및 임무공유" },
+    { category: "상황평가", behavior: "선착대장 활동지원" },
+    { category: "상황평가", behavior: "지휘권 선언" },
+    { category: "상황평가", behavior: "최초 상황평가" },
+    { category: "상황평가", behavior: "중요정보 파악" },
+
+    { category: "지휘 의사결정", behavior: "선착대 대응활동 유효성 판단" },
+    { category: "지휘 의사결정", behavior: "현장 위험성 판단" },
+    { category: "지휘 의사결정", behavior: "핵심목표(대응 지침) 제시" },
+    { category: "지휘 의사결정", behavior: "1차 출동대 임무지시 및 조정" },
+    { category: "지휘 의사결정", behavior: "추가 자원 요청" },
+    { category: "지휘 의사결정", behavior: "차량배치 조정" },
+
+    { category: "대응활동", behavior: "소방활동구역 설정 및 통제" },
+    { category: "대응활동", behavior: "소방용수공급체계 구축" },
+    { category: "대응활동", behavior: "(단계별)소방력 배치 및 조정" },
+    { category: "대응활동", behavior: "현장통합 및 단위지휘관 운영" },
+    { category: "대응활동", behavior: "출동대 대기관리" },
+    { category: "대응활동", behavior: "대기장소 운영" },
+    { category: "대응활동", behavior: "전술상황판 기록" },
+
+    { category: "진행상황 관리", behavior: "진행상황 파악" },
+    { category: "진행상황 관리", behavior: "상황 미개선 및 악화시 대응조치" },
+    { category: "진행상황 관리", behavior: "우선순위보고 조치" },
+    { category: "진행상황 관리", behavior: "초진선언" },
+    { category: "진행상황 관리", behavior: "전술우선순위 관리" },
+    { category: "진행상황 관리", behavior: "완진절차 준수" },
+
+    { category: "의사교환", behavior: "대응초기 무전통제" },
+    { category: "의사교환", behavior: "무전망 분리운영" },
+    { category: "의사교환", behavior: "무전교신 원칙 준수" },
+    { category: "의사교환", behavior: "무전교신 불능 시 조치" },
+    { category: "의사교환", behavior: "효율적 의사교환" },
+
+    { category: "위기관리,리더십", behavior: "돌발 및 위기상황 대응" },
+    { category: "위기관리,리더십", behavior: "스트레스 관리" },
+    { category: "위기관리,리더십", behavior: "리더로서의 능숙한 작전 운영" },
+    { category: "위기관리,리더십", behavior: "인명구조 목표달성의 적절성" },
+    { category: "위기관리,리더십", behavior: "출동대 안전관리의 적절성" },
+    { category: "위기관리,리더십", behavior: "시민보호 및 피해최소화 작전의 적절성" }
+  ]
+};
 
 const authStatusTextEl = document.getElementById("authStatusText");
 const loginBtnEl = document.getElementById("loginBtn");
@@ -61,12 +131,14 @@ const deleteStatusTextEl = document.getElementById("deleteStatusText");
 const deleteCountTextEl = document.getElementById("deleteCountText");
 const detailListPanelEl = document.getElementById("detailListPanel");
 const detailContainerEl = document.getElementById("detailContainer");
+const gradeDistributionCardsEl = document.getElementById("gradeDistributionCards");
 
 let allEvaluations = [];
 let filteredEvaluations = [];
 let allTokens = [];
 let selectedEvaluationId = null;
-let gradeDistributionChart = null;
+let scoreDistributionChart = null;
+let distributionCharts = [];
 let hasInitialized = false;
 
 function escapeHtml(value) {
@@ -189,6 +261,47 @@ function aggregateGradeDistribution(data) {
   return Object.values(aggregated);
 }
 
+function getOrderedDistributionRows(data) {
+  const levelFilter = levelFilterEl.value;
+  const aggregatedRows = aggregateGradeDistribution(data);
+  const map = new Map(
+    aggregatedRows.map((row) => [`${row.category}|||${row.behavior}`, row])
+  );
+
+  let orderItems = [];
+
+  if (levelFilter === "basic") {
+    orderItems = EVALUATION_ORDER.basic;
+  } else if (levelFilter === "intermediate") {
+    orderItems = EVALUATION_ORDER.intermediate;
+  } else {
+    orderItems = [...EVALUATION_ORDER.basic];
+  }
+
+  const ordered = orderItems.map((item) => {
+    const key = `${item.category}|||${item.behavior}`;
+    return map.get(key) || {
+      category: item.category,
+      behavior: item.behavior,
+      high: 0,
+      mid: 0,
+      low: 0,
+      total: 0
+    };
+  });
+
+  if (levelFilter === "all") {
+    aggregatedRows.forEach((row) => {
+      const exists = ordered.some(
+        (item) => item.category === row.category && item.behavior === row.behavior
+      );
+      if (!exists) ordered.push(row);
+    });
+  }
+
+  return ordered;
+}
+
 function renderGradeRatioTable(rows) {
   if (!rows.length) {
     gradeRatioTableBodyEl.innerHTML = `
@@ -236,50 +349,194 @@ function renderGradeRatioTable(rows) {
   }).join("");
 }
 
-function renderGradeDistributionChart(rows) {
-  const canvas = document.getElementById("gradeDistributionChart");
+const barLabelPlugin = {
+  id: "barLabelPlugin",
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const dataset = chart.data.datasets[0];
+    const meta = chart.getDatasetMeta(0);
+    const percents = dataset.percents || [];
 
-  if (gradeDistributionChart) {
-    gradeDistributionChart.destroy();
-    gradeDistributionChart = null;
+    ctx.save();
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    meta.data.forEach((bar, index) => {
+      const value = dataset.data[index] ?? 0;
+      const percent = percents[index] ?? "0.0";
+      const label = `${value}회\n${percent}%`;
+
+      if (value <= 0) return;
+
+      const x = bar.x;
+      const y = bar.y;
+      const lines = label.split("\n");
+
+      ctx.fillStyle = "#ffffff";
+      lines.forEach((line, lineIndex) => {
+        ctx.fillText(line, x, y - 8 + (lineIndex * 14));
+      });
+    });
+
+    ctx.restore();
   }
+};
+
+function destroyDistributionCharts() {
+  distributionCharts.forEach((chart) => chart.destroy());
+  distributionCharts = [];
+}
+
+function renderGradeDistributionCards(rows) {
+  destroyDistributionCharts();
+
+  if (!gradeDistributionCardsEl) return;
 
   if (!rows.length) {
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    gradeDistributionCardsEl.innerHTML = `<div class="empty">표시할 집계 데이터가 없습니다.</div>`;
     return;
   }
 
-  const labels = rows.map((row) => `${row.category} - ${row.behavior}`);
-  const highData = rows.map((row) => row.high);
-  const midData = rows.map((row) => row.mid);
-  const lowData = rows.map((row) => row.low);
+  gradeDistributionCardsEl.innerHTML = rows.map((row, index) => `
+    <div class="distribution-card">
+      <div class="dist-category">${escapeHtml(row.category)}</div>
+      <div class="dist-behavior">${escapeHtml(row.behavior)}</div>
+      <div class="distribution-canvas-wrap">
+        <canvas id="distChart_${index}"></canvas>
+      </div>
+    </div>
+  `).join("");
 
-  gradeDistributionChart = new Chart(canvas, {
+  rows.forEach((row, index) => {
+    const canvas = document.getElementById(`distChart_${index}`);
+    const total = row.total || 0;
+    const data = [row.high, row.mid, row.low];
+    const percents = data.map((value) => total ? ((value / total) * 100).toFixed(1) : "0.0");
+
+    const chart = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: ["상", "중", "하"],
+        datasets: [
+          {
+            data,
+            percents,
+            backgroundColor: ["#2e7d32", "#ef6c00", "#c62828"],
+            borderRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const value = context.raw ?? 0;
+                const percent = percents[context.dataIndex] ?? "0.0";
+                return `${value}회 (${percent}%)`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "상 / 중 / 하"
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0
+            },
+            title: {
+              display: true,
+              text: "횟수"
+            }
+          }
+        }
+      },
+      plugins: [barLabelPlugin]
+    });
+
+    distributionCharts.push(chart);
+  });
+}
+
+function renderScoreDistributionChart(data) {
+  const canvas = document.getElementById("scoreDistributionChart");
+  if (!canvas) return;
+
+  if (scoreDistributionChart) {
+    scoreDistributionChart.destroy();
+    scoreDistributionChart = null;
+  }
+
+  const buckets = {
+    "10": 0, "20": 0, "30": 0, "40": 0, "50": 0,
+    "60": 0, "70": 0, "80": 0, "90": 0, "100": 0
+  };
+
+  data.forEach((item) => {
+    const score = Number(item.totalScore || 0);
+    if (score <= 10) buckets["10"] += 1;
+    else if (score <= 20) buckets["20"] += 1;
+    else if (score <= 30) buckets["30"] += 1;
+    else if (score <= 40) buckets["40"] += 1;
+    else if (score <= 50) buckets["50"] += 1;
+    else if (score <= 60) buckets["60"] += 1;
+    else if (score <= 70) buckets["70"] += 1;
+    else if (score <= 80) buckets["80"] += 1;
+    else if (score <= 90) buckets["90"] += 1;
+    else buckets["100"] += 1;
+  });
+
+  const labels = Object.keys(buckets);
+  const chartData = Object.values(buckets);
+
+  scoreDistributionChart = new Chart(canvas, {
     type: "bar",
     data: {
       labels,
       datasets: [
-        { label: "상", data: highData, backgroundColor: "#2e7d32" },
-        { label: "중", data: midData, backgroundColor: "#ef6c00" },
-        { label: "하", data: lowData, backgroundColor: "#c62828" }
+        {
+          label: "제출 수",
+          data: chartData,
+          backgroundColor: "#1f4e79",
+          borderRadius: 6
+        }
       ]
     },
     options: {
-      indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false }
+      },
       scales: {
         x: {
-          stacked: true,
-          beginAtZero: true,
-          ticks: { precision: 0 },
-          title: { display: true, text: "평정 개수" }
+          title: {
+            display: true,
+            text: "점수분포"
+          }
         },
-        y: { stacked: true }
-      },
-      plugins: {
-        legend: { position: "top" }
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          },
+          title: {
+            display: true,
+            text: "횟수"
+          }
+        }
       }
     }
   });
@@ -421,16 +678,10 @@ function renderDetail(item) {
 }
 
 function updateAnalysis(data) {
-  const rows = aggregateGradeDistribution(data);
-  rows.sort((a, b) => {
-    if (a.category === b.category) {
-      return a.behavior.localeCompare(b.behavior, "ko");
-    }
-    return a.category.localeCompare(b.category, "ko");
-  });
-
-  renderGradeDistributionChart(rows);
-  renderGradeRatioTable(rows);
+  const orderedRows = getOrderedDistributionRows(data);
+  renderGradeDistributionCards(orderedRows);
+  renderGradeRatioTable(orderedRows);
+  renderScoreDistributionChart(data);
 }
 
 function applyFilters() {
@@ -493,6 +744,9 @@ async function loadEvaluations() {
     deleteTableBodyEl.innerHTML = `<tr><td colspan="6" class="empty">데이터 조회 중 오류가 발생했습니다.</td></tr>`;
     detailListPanelEl.innerHTML = `<div class="empty">데이터 조회 중 오류가 발생했습니다.</div>`;
     gradeRatioTableBodyEl.innerHTML = `<tr><td colspan="10" class="empty">분석 데이터를 표시할 수 없습니다.</td></tr>`;
+    if (gradeDistributionCardsEl) {
+      gradeDistributionCardsEl.innerHTML = `<div class="empty">차트 데이터를 표시할 수 없습니다.</div>`;
+    }
   }
 }
 
@@ -588,7 +842,7 @@ async function generateTokens() {
   generateTokensBtnEl.textContent = "생성 중...";
 
   try {
-    let nextSeq = await getNextSequence(level);
+    const nextSeq = await getNextSequence(level);
 
     for (let i = 0; i < count; i++) {
       const tokenId = createTokenId(level, nextSeq + i);
