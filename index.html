@@ -27,39 +27,13 @@
     }
 
     .topbar h1 {
-      margin: 0 0 10px 0;
+      margin: 0;
       font-size: 22px;
       line-height: 1.3;
     }
 
-    .menu {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .menu-btn {
-      border: none;
-      padding: 10px 14px;
-      border-radius: 10px;
-      background: #d9e6f2;
-      color: #123;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .menu-btn.active {
-      background: #ffcc66;
-    }
-
-    .menu-btn:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-
     .container {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 14px 12px 120px;
     }
@@ -98,6 +72,13 @@
       line-height: 1.35;
     }
 
+    .top-controls {
+      display: grid;
+      grid-template-columns: 1fr 260px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
     .score-summary {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -114,6 +95,43 @@
       font-size: 15px;
     }
 
+    .view-mode-box {
+      background: #f7fafc;
+      border: 1px solid #d8e2ea;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .view-mode-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #55626f;
+      margin-bottom: 8px;
+    }
+
+    .view-mode-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .view-mode-btn {
+      border: 1px solid #cdd7df;
+      background: white;
+      color: #1f2d3d;
+      border-radius: 10px;
+      min-height: 42px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .view-mode-btn.active {
+      background: #1f4e79;
+      color: white;
+      border-color: #1f4e79;
+    }
+
     .notice {
       color: #666;
       margin-bottom: 14px;
@@ -124,7 +142,63 @@
     .score-list {
       display: flex;
       flex-direction: column;
+      gap: 16px;
+    }
+
+    .group-card {
+      border: 1px solid #d9e1e8;
+      border-radius: 16px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .group-header {
+      background: #1f4e79;
+      color: white;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .group-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .group-title {
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .group-subtitle {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .toggle-icon {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .group-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f9fbfd;
+    }
+
+    .group-card.collapsed .group-body {
+      display: none;
     }
 
     .score-item {
@@ -138,17 +212,6 @@
       background: #f7fafc;
       border-bottom: 1px solid #e3e9ee;
       padding: 12px 14px;
-    }
-
-    .category-badge {
-      display: inline-block;
-      margin-bottom: 8px;
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: #1f4e79;
-      color: white;
-      font-size: 12px;
-      font-weight: 700;
     }
 
     .behavior-title {
@@ -263,7 +326,7 @@
     }
 
     .actions {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: 120px 1fr;
@@ -289,6 +352,20 @@
     button.action-btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    .web-mode .group-body {
+      display: flex;
+    }
+
+    .app-mode .group-card.collapsed .group-body {
+      display: none;
+    }
+
+    @media (max-width: 860px) {
+      .top-controls {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 640px) {
@@ -317,16 +394,16 @@
       .actions {
         grid-template-columns: 1fr 1fr;
       }
+
+      .group-title {
+        font-size: 17px;
+      }
     }
   </style>
 </head>
 <body>
   <header class="topbar">
     <h1>지휘관 자격인증제 평가</h1>
-    <nav class="menu">
-      <button class="menu-btn active" data-level="basic">초급 평가표</button>
-      <button class="menu-btn" data-level="intermediate">중급 평가표</button>
-    </nav>
   </header>
 
   <main class="container">
@@ -334,18 +411,29 @@
       <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
 
       <div class="title-row">
-        <h2 id="sheetTitle" class="sheet-title">초급 실기평가표</h2>
-        <div class="score-summary">
-          <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
-          <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+        <h2 id="sheetTitle" class="sheet-title">평가표 불러오는 중...</h2>
+
+        <div class="top-controls">
+          <div class="score-summary">
+            <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
+            <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+          </div>
+
+          <div class="view-mode-box">
+            <div class="view-mode-title">보기 방식 선택</div>
+            <div class="view-mode-buttons">
+              <button id="webModeBtn" type="button" class="view-mode-btn active">웹용</button>
+              <button id="appModeBtn" type="button" class="view-mode-btn">앱용</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <div class="notice">
-        각 항목은 상 / 중 / 하 중 하나만 선택할 수 있습니다.
+        카테고리 제목을 누르면 접기/펼치기가 가능합니다. 각 항목은 상 / 중 / 하 중 하나만 선택할 수 있습니다.
       </div>
 
-      <div id="scoreTable"></div>
+      <div id="scoreTable" class="web-mode"></div>
 
       <div class="comment-box">
         <label for="comment">비고 / 메모</label>
