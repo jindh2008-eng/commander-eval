@@ -51,7 +51,7 @@ const sheetData = {
 
   intermediate: {
     title: "중급 실기평가표",
-    total: 200,
+    total: 144,
     items: [
       { category: "상황평가", behavior: "출동중 정보수집 및 임무공유", score: 3 },
       { category: "상황평가", behavior: "선착대장 활동지원", score: 5 },
@@ -101,7 +101,7 @@ let currentLevel = null;
 let currentToken = null;
 let tokenValidated = false;
 let isSubmitting = false;
-let viewMode = "web";
+let viewMode = detectViewMode();
 let collapsedCategories = new Set();
 
 const sheetTitle = document.getElementById("sheetTitle");
@@ -113,8 +113,17 @@ const resetBtn = document.getElementById("resetBtn");
 const submitBtn = document.getElementById("submitBtn");
 const statusTextEl = document.getElementById("statusText");
 const tokenInfoEl = document.getElementById("tokenInfo");
-const webViewBtn = document.getElementById("webViewBtn");
-const appViewBtn = document.getElementById("appViewBtn");
+
+function detectViewMode() {
+  const isTouchDevice =
+    window.matchMedia("(pointer: coarse)").matches ||
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0;
+
+  const isSmallScreen = window.innerWidth <= 1024;
+
+  return (isTouchDevice || isSmallScreen) ? "app" : "web";
+}
 
 function getTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -169,13 +178,30 @@ function groupItemsByCategory(items) {
   return grouped;
 }
 
+function saveSelections() {
+  const selections = {};
+  document.querySelectorAll(".item-grade:checked").forEach((radio) => {
+    selections[radio.name] = radio.value;
+  });
+  window.__savedSelections = selections;
+}
+
+function restoreSelections() {
+  if (!window.__savedSelections) return;
+  Object.entries(window.__savedSelections).forEach(([name, value]) => {
+    const target = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (target) target.checked = true;
+  });
+  calculateCurrentScore();
+}
+
 function renderTable(level) {
   const data = sheetData[level];
   sheetTitle.textContent = `${data.title}`;
   maxTotalScoreEl.textContent = data.total;
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
-  commentEl.value = "";
+  commentEl.value = commentEl.value || "";
 
   const grouped = groupItemsByCategory(data.items);
 
@@ -255,39 +281,24 @@ function renderTable(level) {
     document.querySelectorAll(".group-header.app-collapsible").forEach((header) => {
       header.addEventListener("click", () => {
         const category = header.dataset.category;
+        saveSelections();
+
         if (collapsedCategories.has(category)) {
           collapsedCategories.delete(category);
         } else {
           collapsedCategories.add(category);
         }
+
         renderTable(currentLevel);
         restoreSelections();
+        setUiEnabled(tokenValidated);
       });
     });
   }
 }
 
-function restoreSelections() {
-  if (!window.__savedSelections) return;
-  Object.entries(window.__savedSelections).forEach(([name, value]) => {
-    const target = document.querySelector(`input[name="${name}"][value="${value}"]`);
-    if (target) target.checked = true;
-  });
-  calculateCurrentScore();
-}
-
-function saveSelections() {
-  const selections = {};
-  document.querySelectorAll(".item-grade:checked").forEach((radio) => {
-    selections[radio.name] = radio.value;
-  });
-  window.__savedSelections = selections;
-}
-
 function setViewMode(mode) {
   viewMode = mode;
-  webViewBtn.classList.toggle("active", mode === "web");
-  appViewBtn.classList.toggle("active", mode === "app");
 
   if (mode === "web") {
     collapsedCategories.clear();
@@ -370,6 +381,8 @@ async function validateTokenAndSetup() {
   }
 
   currentLevel = tokenData.allowedLevel;
+  viewMode = detectViewMode();
+
   renderTable(currentLevel);
   setUiEnabled(true);
   tokenValidated = true;
@@ -377,16 +390,6 @@ async function validateTokenAndSetup() {
   tokenInfoEl.textContent = `토큰 확인 완료 · ${currentLevel === "basic" ? "초급" : "중급"} 평가 진행 가능`;
   tokenInfoEl.style.color = "#7a5a00";
 }
-
-webViewBtn.addEventListener("click", () => {
-  if (!currentLevel) return;
-  setViewMode("web");
-});
-
-appViewBtn.addEventListener("click", () => {
-  if (!currentLevel) return;
-  setViewMode("app");
-});
 
 resetBtn.addEventListener("click", clearSelections);
 
@@ -458,6 +461,13 @@ submitBtn.addEventListener("click", async () => {
     submitBtn.textContent = "제출";
   } finally {
     isSubmitting = false;
+  }
+});
+
+window.addEventListener("resize", () => {
+  const nextMode = detectViewMode();
+  if (nextMode !== viewMode && currentLevel) {
+    setViewMode(nextMode);
   }
 });
 
