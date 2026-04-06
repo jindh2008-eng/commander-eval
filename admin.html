@@ -160,21 +160,55 @@
       color: #1f4e79;
     }
 
-    .token-grid,
     .filter-grid {
       display: grid;
       gap: 12px;
       align-items: end;
-    }
-
-    .token-grid {
-      grid-template-columns: 180px 140px auto auto auto;
-      margin-bottom: 14px;
-    }
-
-    .filter-grid {
       grid-template-columns: 180px 180px 1fr auto auto;
       margin-bottom: 14px;
+    }
+
+    .token-create-grid {
+      display: grid;
+      grid-template-columns: 180px 140px 140px 140px 1fr;
+      gap: 12px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .token-action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .token-preview-box {
+      margin-top: 16px;
+      border: 1px solid #d7e0e8;
+      border-radius: 12px;
+      background: #f7fbff;
+      padding: 14px 16px;
+    }
+
+    .token-preview-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #5b6b79;
+      margin-bottom: 8px;
+    }
+
+    .token-preview-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1f4e79;
+    }
+
+    .token-help-text {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
     }
 
     label {
@@ -420,7 +454,7 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .token-grid,
+      .token-create-grid,
       .filter-grid,
       .detail-meta {
         grid-template-columns: 1fr 1fr;
@@ -433,7 +467,7 @@
 
     @media (max-width: 700px) {
       .summary-grid,
-      .token-grid,
+      .token-create-grid,
       .filter-grid,
       .detail-meta,
       .menu-list {
@@ -550,7 +584,7 @@
         <div class="card">
           <h2 class="section-title">토큰생성/배부관리</h2>
 
-          <div class="token-grid">
+          <div class="token-create-grid">
             <div>
               <label for="tokenLevel">과정 구분</label>
               <select id="tokenLevel">
@@ -560,27 +594,44 @@
             </div>
 
             <div>
+              <label for="tokenType">유형</label>
+              <select id="tokenType">
+                <option value="evaluation">평가</option>
+                <option value="practice">연습</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="tokenRound">회차</label>
+              <input id="tokenRound" type="number" min="1" value="1" />
+            </div>
+
+            <div>
               <label for="tokenCount">생성 개수</label>
               <input id="tokenCount" type="number" min="1" value="5" />
             </div>
 
             <div>
-              <label>&nbsp;</label>
-              <button id="generateTokensBtn">토큰 생성</button>
-            </div>
-
-            <div>
-              <label>&nbsp;</label>
-              <button id="refreshTokensBtn" class="secondary">토큰 새로고침</button>
-            </div>
-
-            <div>
-              <label>&nbsp;</label>
-              <button id="copyAllLinksBtn" class="secondary">링크 전체 복사</button>
+              <label for="tokenLabelPreview">표시 이름</label>
+              <input id="tokenLabelPreview" type="text" value="평가-1" readonly />
             </div>
           </div>
 
-          <div class="toolbar">
+          <div class="token-preview-box">
+            <div class="token-preview-label">생성 미리보기</div>
+            <div class="token-preview-text" id="tokenPreviewText">초급 · 평가-1 · 5개 생성</div>
+            <div class="token-help-text">
+              현재는 UI만 변경한 상태입니다. 저장 로직 반영 전까지는 표시 이름이 화면에만 보입니다.
+            </div>
+          </div>
+
+          <div class="token-action-row">
+            <button id="generateTokensBtn">토큰 생성</button>
+            <button id="refreshTokensBtn" class="secondary">토큰 새로고침</button>
+            <button id="copyAllLinksBtn" class="secondary">링크 전체 복사</button>
+          </div>
+
+          <div class="toolbar" style="margin-top: 18px;">
             <div class="status" id="tokenStatusText">토큰 목록을 불러오는 중...</div>
             <div class="muted" id="tokenCountText">토큰 수: 0</div>
           </div>
@@ -591,6 +642,9 @@
                 <tr>
                   <th>토큰</th>
                   <th>과정</th>
+                  <th>유형</th>
+                  <th>회차</th>
+                  <th>표시 이름</th>
                   <th>사용 여부</th>
                   <th>사용 시각</th>
                   <th>평가 링크</th>
@@ -600,7 +654,7 @@
               </thead>
               <tbody id="tokenTableBody">
                 <tr>
-                  <td colspan="7" class="empty">토큰을 불러오는 중입니다.</td>
+                  <td colspan="10" class="empty">토큰을 불러오는 중입니다.</td>
                 </tr>
               </tbody>
             </table>
@@ -629,7 +683,7 @@
                 <tr>
                   <th>평가항목</th>
                   <th>행동지표</th>
-                  <th>총 평가수</th>
+                  <th>전체 개수</th>
                   <th>상 개수</th>
                   <th>중 개수</th>
                   <th>하 개수</th>
