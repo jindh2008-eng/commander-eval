@@ -168,12 +168,12 @@
     }
 
     .token-grid {
-      grid-template-columns: 180px 220px 140px auto auto auto;
+      grid-template-columns: 180px 140px auto auto auto;
       margin-bottom: 14px;
-    }  
+    }
 
     .filter-grid {
-      grid-template-columns: 180px 180px 180px 1fr auto auto;
+      grid-template-columns: 180px 180px 1fr auto auto;
       margin-bottom: 14px;
     }
 
@@ -517,16 +517,6 @@
               <option value="basic">초급</option>
               <option value="intermediate">중급</option>
             </select>
-          <div>
-            <label for="detailFilter">세부 구분</label>
-            <select id="detailFilter">
-              <option value="all">전체</option>
-            </select>
-          </div>
-          </div>
-          <div>
-            <label for="tokenDetail">세부 내용</label>
-            <input id="tokenDetail" type="text" placeholder="예: 실습1, 실습2, 평가1, 평가2" />
           </div>
 
           <div>
@@ -622,20 +612,10 @@
         <div class="card">
           <h2 class="section-title">평가항목별 점수분포</h2>
           <div class="muted" style="margin-bottom: 12px;">
-            평가표 순서대로 항목별 상/중/하 분포를 표시합니다.
+            현재 필터 결과를 기준으로 항목별 상/중/하 분포를 표시합니다.
           </div>
-          <div id="gradeDistributionCards" class="distribution-grid">
-            <div class="empty">데이터를 불러오는 중입니다.</div>
-          </div>
-        </div>
-      
-        <div class="card">
-          <h2 class="section-title">제출 총점 분포</h2>
-          <div class="muted" style="margin-bottom: 12px;">
-            제출된 평가표의 총점 분포를 10점 단위로 표시합니다.
-          </div>
-          <div class="chart-wrap score-chart-wrap">
-            <canvas id="scoreDistributionChart"></canvas>
+          <div class="chart-wrap">
+            <canvas id="gradeDistributionChart"></canvas>
           </div>
         </div>
       </section>
