@@ -20,7 +20,7 @@ const scoreMap = {
 const sheetData = {
   basic: {
     title: "초급 실기평가표",
-    total: 65,
+    total: 100,
     items: [
       { category: "상황평가", behavior: "출동중 정보수집 및 임무공유", score: 3 },
       { category: "상황평가", behavior: "출동중 상황전파", score: 3 },
@@ -51,7 +51,7 @@ const sheetData = {
 
   intermediate: {
     title: "중급 실기평가표",
-    total: 144,
+    total: 200,
     items: [
       { category: "상황평가", behavior: "출동중 정보수집 및 임무공유", score: 3 },
       { category: "상황평가", behavior: "선착대장 활동지원", score: 5 },
