@@ -168,12 +168,12 @@
     }
 
     .token-grid {
-      grid-template-columns: 180px 140px auto auto auto;
+      grid-template-columns: 180px 220px 140px auto auto auto;
       margin-bottom: 14px;
-    }
+    }  
 
     .filter-grid {
-      grid-template-columns: 180px 180px 1fr auto auto;
+      grid-template-columns: 180px 180px 180px 1fr auto auto;
       margin-bottom: 14px;
     }
 
@@ -517,6 +517,16 @@
               <option value="basic">초급</option>
               <option value="intermediate">중급</option>
             </select>
+          <div>
+            <label for="detailFilter">세부 구분</label>
+            <select id="detailFilter">
+              <option value="all">전체</option>
+            </select>
+          </div>
+          </div>
+          <div>
+            <label for="tokenDetail">세부 내용</label>
+            <input id="tokenDetail" type="text" placeholder="예: 실습1, 실습2, 평가1, 평가2" />
           </div>
 
           <div>
