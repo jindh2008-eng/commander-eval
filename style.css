@@ -8,6 +8,63 @@ body {
   background: #f3f5f7;
   color: #222;
 }
+.distribution-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.distribution-card {
+  border: 1px solid #d8dee5;
+  border-radius: 12px;
+  background: #fcfdff;
+  padding: 14px;
+}
+
+.distribution-card .dist-category {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f4e79;
+  margin-bottom: 6px;
+}
+
+.distribution-card .dist-behavior {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+
+.distribution-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 240px;
+}
+
+.score-chart-wrap {
+  min-height: 420px;
+}
+
+@media (max-width: 1200px) {
+  .distribution-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .distribution-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .distribution-canvas-wrap {
+    height: 220px;
+  }
+
+  .score-chart-wrap {
+    min-height: 340px;
+  }
+}
 
 .topbar {
   background: #1f4e79;
