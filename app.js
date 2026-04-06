@@ -157,52 +157,55 @@ function renderTable(level) {
   statusTextEl.textContent = "";
   commentEl.value = "";
 
-  let html = `
-    <div class="table-wrap">
-      <table class="score-table">
-        <thead>
-          <tr>
-            <th style="width: 170px;">평가항목</th>
-            <th>행동지표</th>
-            <th style="width: 90px;">배점</th>
-            <th style="width: 90px;">상</th>
-            <th style="width: 90px;">중</th>
-            <th style="width: 90px;">하</th>
-          </tr>
-        </thead>
-        <tbody>
+  const html = `
+    <div class="score-list">
+      ${data.items.map((item, index) => `
+        <div class="score-item">
+          <div class="score-item-head">
+            <div class="category-badge">${item.category}</div>
+            <div class="behavior-title">${item.behavior}</div>
+            <div class="score-meta">배점: ${item.score}점</div>
+          </div>
+
+          <div class="grade-buttons">
+            <label class="grade-option high">
+              <input
+                type="radio"
+                class="item-grade"
+                name="item_${index}"
+                value="high"
+                data-score="${item.score}"
+              />
+              <span class="grade-label">상</span>
+            </label>
+
+            <label class="grade-option mid">
+              <input
+                type="radio"
+                class="item-grade"
+                name="item_${index}"
+                value="mid"
+                data-score="${item.score}"
+              />
+              <span class="grade-label">중</span>
+            </label>
+
+            <label class="grade-option low">
+              <input
+                type="radio"
+                class="item-grade"
+                name="item_${index}"
+                value="low"
+                data-score="${item.score}"
+              />
+              <span class="grade-label">하</span>
+            </label>
+          </div>
+        </div>
+      `).join("")}
+    </div>
   `;
 
-  let i = 0;
-  while (i < data.items.length) {
-    const category = data.items[i].category;
-    const group = [];
-
-    while (i < data.items.length && data.items[i].category === category) {
-      group.push(data.items[i]);
-      i++;
-    }
-
-    group.forEach((item, idx) => {
-      const rowIndex = i - group.length + idx;
-      html += `<tr>`;
-
-      if (idx === 0) {
-        html += `<td class="category-cell" rowspan="${group.length}">${category}</td>`;
-      }
-
-      html += `
-        <td class="behavior-cell">${item.behavior}</td>
-        <td>${item.score}</td>
-        <td><div class="radio-wrap"><input type="radio" class="item-grade" name="item_${rowIndex}" value="high" data-score="${item.score}"></div></td>
-        <td><div class="radio-wrap"><input type="radio" class="item-grade" name="item_${rowIndex}" value="mid" data-score="${item.score}"></div></td>
-        <td><div class="radio-wrap"><input type="radio" class="item-grade" name="item_${rowIndex}" value="low" data-score="${item.score}"></div></td>
-      `;
-      html += `</tr>`;
-    });
-  }
-
-  html += `</tbody></table></div>`;
   scoreTableEl.innerHTML = html;
 
   document.querySelectorAll(".item-grade").forEach((radio) => {
@@ -240,6 +243,7 @@ function clearSelections() {
   commentEl.value = "";
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function validateTokenAndSetup() {
@@ -287,7 +291,7 @@ async function validateTokenAndSetup() {
   setUiEnabled(true);
   tokenValidated = true;
 
-  tokenInfoEl.textContent = `접속 토큰 확인 완료: ${currentToken} / ${currentLevel === "basic" ? "초급" : "중급"} 평가표`;
+  tokenInfoEl.textContent = `토큰 확인 완료 · ${currentLevel === "basic" ? "초급" : "중급"} 평가 진행 가능`;
   tokenInfoEl.style.color = "#7a5a00";
 }
 
@@ -363,6 +367,7 @@ submitBtn.addEventListener("click", async () => {
     tokenInfoEl.textContent = "제출 완료된 링크입니다. 재제출은 허용되지 않습니다.";
     tokenInfoEl.style.color = "green";
     setUiEnabled(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (error) {
     console.error(error);
     statusTextEl.textContent = error.message || "제출 중 오류가 발생했습니다.";
