@@ -22,13 +22,15 @@
       color: #222;
     }
 
-    /* 상단 전체를 하나로 고정 */
-    .top-sticky-wrap {
-      position: sticky;
+    /* 상단 전체 고정 */
+    .top-fixed-wrap {
+      position: fixed;
       top: 0;
-      z-index: 300;
+      left: 0;
+      right: 0;
+      z-index: 500;
       background: #f3f5f7;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
     }
 
     .topbar {
@@ -64,14 +66,14 @@
       color: #5f4a00;
     }
 
-    .sticky-score-wrap {
+    .score-wrap {
       background: rgba(243, 245, 247, 0.98);
       backdrop-filter: blur(6px);
       padding: 10px 12px 12px;
       border-bottom: 1px solid #dce4ea;
     }
 
-    .sticky-score-inner {
+    .score-inner {
       max-width: 980px;
       margin: 0 auto;
       display: flex;
@@ -91,10 +93,11 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
+    /* 상단 고정 영역 높이만큼 본문 내려주기 */
     .container {
       max-width: 980px;
       margin: 0 auto;
-      padding: 16px 12px 120px;
+      padding: 210px 12px 120px;
       overflow: visible;
     }
 
@@ -343,21 +346,25 @@
         font-size: 20px;
       }
 
-      .sheet-title {
-        font-size: 20px;
-      }
-
-      .sticky-score-wrap {
+      .score-wrap {
         padding: 8px 10px 10px;
       }
 
-      .sticky-score-inner {
+      .score-inner {
         gap: 8px;
       }
 
       .score-box {
         font-size: 14px;
         padding: 10px 8px;
+      }
+
+      .container {
+        padding-top: 190px;
+      }
+
+      .sheet-title {
+        font-size: 20px;
       }
 
       .grade-buttons {
@@ -377,7 +384,7 @@
   </style>
 </head>
 <body>
-  <div class="top-sticky-wrap">
+  <div class="top-fixed-wrap">
     <header class="topbar">
       <div class="topbar-inner">
         <h1>지휘관 자격인증제 평가</h1>
@@ -387,8 +394,8 @@
       </div>
     </header>
 
-    <div id="topSummaryBar" class="sticky-score-wrap">
-      <div class="sticky-score-inner">
+    <div id="topSummaryBar" class="score-wrap">
+      <div class="score-inner">
         <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
         <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
       </div>
