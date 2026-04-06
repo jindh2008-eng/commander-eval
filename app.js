@@ -98,10 +98,11 @@ const sheetData = {
 };
 
 let currentLevel = null;
-let isSubmitting = false;
 let currentToken = null;
 let tokenValidated = false;
-let currentViewMode = "web";
+let isSubmitting = false;
+let viewMode = "web";
+let collapsedCategories = new Set();
 
 const sheetTitle = document.getElementById("sheetTitle");
 const currentScoreEl = document.getElementById("currentScore");
@@ -112,8 +113,8 @@ const resetBtn = document.getElementById("resetBtn");
 const submitBtn = document.getElementById("submitBtn");
 const statusTextEl = document.getElementById("statusText");
 const tokenInfoEl = document.getElementById("tokenInfo");
-const webModeBtn = document.getElementById("webModeBtn");
-const appModeBtn = document.getElementById("appModeBtn");
+const webViewBtn = document.getElementById("webViewBtn");
+const appViewBtn = document.getElementById("appViewBtn");
 
 function getTokenFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -127,6 +128,15 @@ function setUiEnabled(enabled) {
   commentEl.disabled = !enabled;
   resetBtn.disabled = !enabled;
   submitBtn.disabled = !enabled;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function gradeLabelToScore(maxScore, grade) {
@@ -150,9 +160,9 @@ function calculateCurrentScore() {
   return total;
 }
 
-function buildGroupedItems(level) {
+function groupItemsByCategory(items) {
   const grouped = {};
-  sheetData[level].items.forEach((item, index) => {
+  items.forEach((item, index) => {
     if (!grouped[item.category]) grouped[item.category] = [];
     grouped[item.category].push({ ...item, index });
   });
@@ -161,49 +171,300 @@ function buildGroupedItems(level) {
 
 function renderTable(level) {
   const data = sheetData[level];
-  const grouped = buildGroupedItems(level);
-
-  sheetTitle.textContent = `${data.title} (총점: ${data.total}점)`;
+  sheetTitle.textContent = `${data.title}`;
   maxTotalScoreEl.textContent = data.total;
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
   commentEl.value = "";
 
-  const collapseByDefault = currentViewMode === "app";
+  const grouped = groupItemsByCategory(data.items);
 
   const html = `
     <div class="score-list">
-      ${Object.entries(grouped).map(([category, items]) => `
-        <div class="group-card ${collapseByDefault ? "collapsed" : ""}" data-category="${category}">
-          <div class="group-header" data-toggle-category="${category}">
-            <div class="group-title-wrap">
-              <div class="group-title">${category}</div>
-              <div class="group-subtitle">평가항목 ${items.length}개</div>
-            </div>
-            <div class="toggle-icon">${collapseByDefault ? "+" : "−"}</div>
-          </div>
+      ${Object.entries(grouped).map(([category, items]) => {
+        const isCollapsed = viewMode === "app" && collapsedCategories.has(category);
+        return `
+          <div class="group-card ${isCollapsed ? "collapsed" : ""}" data-category="${escapeHtml(category)}">
+            <button
+              type="button"
+              class="group-header ${viewMode === "app" ? "app-collapsible" : ""}"
+              data-category="${escapeHtml(category)}"
+            >
+              <span>${escapeHtml(category)}</span>
+              <span class="group-arrow">${viewMode === "app" ? "▾" : ""}</span>
+            </button>
 
-          <div class="group-body">
-            ${items.map((item) => `
-              <div class="score-item">
-                <div class="score-item-head">
-                  <div class="behavior-title">${item.behavior}</div>
-                  <div class="score-meta">배점: ${item.score}점</div>
+            <div class="group-body">
+              ${items.map((item) => `
+                <div class="score-item">
+                  <div class="score-item-head">
+                    <div class="behavior-title">${escapeHtml(item.behavior)}</div>
+                    <div class="score-meta">배점: ${item.score}점</div>
+                  </div>
+
+                  <div class="grade-buttons">
+                    <label class="grade-option high">
+                      <input
+                        type="radio"
+                        class="item-grade"
+                        name="item_${item.index}"
+                        value="high"
+                        data-score="${item.score}"
+                      />
+                      <span class="grade-label">상</span>
+                    </label>
+
+                    <label class="grade-option mid">
+                      <input
+                        type="radio"
+                        class="item-grade"
+                        name="item_${item.index}"
+                        value="mid"
+                        data-score="${item.score}"
+                      />
+                      <span class="grade-label">중</span>
+                    </label>
+
+                    <label class="grade-option low">
+                      <input
+                        type="radio"
+                        class="item-grade"
+                        name="item_${item.index}"
+                        value="low"
+                        data-score="${item.score}"
+                      />
+                      <span class="grade-label">하</span>
+                    </label>
+                  </div>
                 </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 
-                <div class="grade-buttons">
-                  <label class="grade-option high">
-                    <input
-                      type="radio"
-                      class="item-grade"
-                      name="item_${item.index}"
-                      value="high"
-                      data-score="${item.score}"
-                    />
-                    <span class="grade-label">상</span>
-                  </label>
+  scoreTableEl.innerHTML = html;
 
-                  <label class="grade-option mid">
-                    <input
-                      type="radio"
-                      class
+  document.querySelectorAll(".item-grade").forEach((radio) => {
+    radio.addEventListener("change", calculateCurrentScore);
+  });
+
+  if (viewMode === "app") {
+    document.querySelectorAll(".group-header.app-collapsible").forEach((header) => {
+      header.addEventListener("click", () => {
+        const category = header.dataset.category;
+        if (collapsedCategories.has(category)) {
+          collapsedCategories.delete(category);
+        } else {
+          collapsedCategories.add(category);
+        }
+        renderTable(currentLevel);
+        restoreSelections();
+      });
+    });
+  }
+}
+
+function restoreSelections() {
+  if (!window.__savedSelections) return;
+  Object.entries(window.__savedSelections).forEach(([name, value]) => {
+    const target = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (target) target.checked = true;
+  });
+  calculateCurrentScore();
+}
+
+function saveSelections() {
+  const selections = {};
+  document.querySelectorAll(".item-grade:checked").forEach((radio) => {
+    selections[radio.name] = radio.value;
+  });
+  window.__savedSelections = selections;
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  webViewBtn.classList.toggle("active", mode === "web");
+  appViewBtn.classList.toggle("active", mode === "app");
+
+  if (mode === "web") {
+    collapsedCategories.clear();
+  }
+
+  saveSelections();
+  renderTable(currentLevel);
+  restoreSelections();
+  setUiEnabled(tokenValidated);
+}
+
+function validateAllSelected() {
+  const itemCount = sheetData[currentLevel].items.length;
+  for (let i = 0; i < itemCount; i++) {
+    if (!document.querySelector(`input[name="item_${i}"]:checked`)) return false;
+  }
+  return true;
+}
+
+function collectItemResults() {
+  return sheetData[currentLevel].items.map((item, index) => {
+    const checked = document.querySelector(`input[name="item_${index}"]:checked`);
+    const selectedGrade = checked.value;
+    return {
+      category: item.category,
+      behavior: item.behavior,
+      maxScore: item.score,
+      selectedGrade,
+      selectedGradeLabel: gradeLabelToKorean(selectedGrade),
+      selectedScore: gradeLabelToScore(item.score, selectedGrade)
+    };
+  });
+}
+
+function clearSelections() {
+  document.querySelectorAll(".item-grade").forEach((radio) => {
+    radio.checked = false;
+  });
+  commentEl.value = "";
+  currentScoreEl.textContent = "0";
+  statusTextEl.textContent = "";
+  window.__savedSelections = {};
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function validateTokenAndSetup() {
+  currentToken = getTokenFromUrl();
+
+  if (!currentToken) {
+    tokenInfoEl.textContent = "유효한 접속 토큰이 없습니다. 관리자에게 링크를 다시 받으세요.";
+    tokenInfoEl.style.color = "red";
+    setUiEnabled(false);
+    return;
+  }
+
+  const tokenRef = doc(db, "inviteTokens", currentToken);
+  const tokenSnap = await getDoc(tokenRef);
+
+  if (!tokenSnap.exists()) {
+    tokenInfoEl.textContent = "존재하지 않는 토큰입니다.";
+    tokenInfoEl.style.color = "red";
+    setUiEnabled(false);
+    return;
+  }
+
+  const tokenData = tokenSnap.data();
+
+  if (tokenData.isUsed) {
+    tokenInfoEl.textContent = "이미 사용 완료된 링크입니다. 재제출은 허용되지 않습니다.";
+    tokenInfoEl.style.color = "red";
+    setUiEnabled(false);
+    return;
+  }
+
+  if (!tokenData.allowedLevel || !sheetData[tokenData.allowedLevel]) {
+    tokenInfoEl.textContent = "토큰에 과정 정보가 없습니다. 관리자에게 문의하세요.";
+    tokenInfoEl.style.color = "red";
+    setUiEnabled(false);
+    return;
+  }
+
+  currentLevel = tokenData.allowedLevel;
+  renderTable(currentLevel);
+  setUiEnabled(true);
+  tokenValidated = true;
+
+  tokenInfoEl.textContent = `토큰 확인 완료 · ${currentLevel === "basic" ? "초급" : "중급"} 평가 진행 가능`;
+  tokenInfoEl.style.color = "#7a5a00";
+}
+
+webViewBtn.addEventListener("click", () => {
+  if (!currentLevel) return;
+  setViewMode("web");
+});
+
+appViewBtn.addEventListener("click", () => {
+  if (!currentLevel) return;
+  setViewMode("app");
+});
+
+resetBtn.addEventListener("click", clearSelections);
+
+submitBtn.addEventListener("click", async () => {
+  if (!tokenValidated || isSubmitting || !currentLevel) return;
+
+  if (!validateAllSelected()) {
+    statusTextEl.textContent = "모든 평가항목에 대해 상 / 중 / 하 중 하나를 선택하세요.";
+    statusTextEl.style.color = "red";
+    return;
+  }
+
+  const itemResults = collectItemResults();
+  const totalScore = itemResults.reduce((sum, item) => sum + item.selectedScore, 0);
+  const totalPossible = sheetData[currentLevel].total;
+  const comment = commentEl.value.trim();
+
+  isSubmitting = true;
+  submitBtn.disabled = true;
+  submitBtn.textContent = "제출 중...";
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const tokenRef = doc(db, "inviteTokens", currentToken);
+      const evalRef = doc(db, "evaluations", currentToken);
+
+      const tokenSnap = await transaction.get(tokenRef);
+
+      if (!tokenSnap.exists()) {
+        throw new Error("토큰이 존재하지 않습니다.");
+      }
+
+      const tokenData = tokenSnap.data();
+
+      if (tokenData.isUsed) {
+        throw new Error("이미 제출 완료된 토큰입니다.");
+      }
+
+      transaction.set(evalRef, {
+        submissionId: currentToken,
+        token: currentToken,
+        level: currentLevel,
+        levelTitle: sheetData[currentLevel].title,
+        totalPossible,
+        totalScore,
+        comment,
+        itemResults,
+        submittedAt: serverTimestamp(),
+        createdAt: serverTimestamp()
+      });
+
+      transaction.update(tokenRef, {
+        isUsed: true,
+        usedAt: serverTimestamp()
+      });
+    });
+
+    statusTextEl.textContent = `제출 완료되었습니다. 현재 총점: ${totalScore} / ${totalPossible}`;
+    statusTextEl.style.color = "green";
+    tokenInfoEl.textContent = "제출 완료된 링크입니다. 재제출은 허용되지 않습니다.";
+    tokenInfoEl.style.color = "green";
+    setUiEnabled(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (error) {
+    console.error(error);
+    statusTextEl.textContent = error.message || "제출 중 오류가 발생했습니다.";
+    statusTextEl.style.color = "red";
+    submitBtn.disabled = false;
+    submitBtn.textContent = "제출";
+  } finally {
+    isSubmitting = false;
+  }
+});
+
+setUiEnabled(false);
+validateTokenAndSetup().catch((error) => {
+  console.error(error);
+  tokenInfoEl.textContent = "토큰 확인 중 오류가 발생했습니다.";
+  tokenInfoEl.style.color = "red";
+  setUiEnabled(false);
+});
