@@ -612,10 +612,20 @@
         <div class="card">
           <h2 class="section-title">평가항목별 점수분포</h2>
           <div class="muted" style="margin-bottom: 12px;">
-            현재 필터 결과를 기준으로 항목별 상/중/하 분포를 표시합니다.
+            평가표 순서대로 항목별 상/중/하 분포를 표시합니다.
           </div>
-          <div class="chart-wrap">
-            <canvas id="gradeDistributionChart"></canvas>
+          <div id="gradeDistributionCards" class="distribution-grid">
+            <div class="empty">데이터를 불러오는 중입니다.</div>
+          </div>
+        </div>
+      
+        <div class="card">
+          <h2 class="section-title">제출 총점 분포</h2>
+          <div class="muted" style="margin-bottom: 12px;">
+            제출된 평가표의 총점 분포를 10점 단위로 표시합니다.
+          </div>
+          <div class="chart-wrap score-chart-wrap">
+            <canvas id="scoreDistributionChart"></canvas>
           </div>
         </div>
       </section>
