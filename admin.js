@@ -1,5 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import {
   getFirestore,
   collection,
   getDocs,
@@ -14,7 +21,19 @@ import {
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
+
+/* 반드시 본인 관리자 이메일로 수정 */
+const ADMIN_EMAILS = [
+  "youradmin@gmail.com"
+];
+
+const authStatusTextEl = document.getElementById("authStatusText");
+const loginBtnEl = document.getElementById("loginBtn");
+const logoutBtnEl = document.getElementById("logoutBtn");
+const adminLayoutEl = document.getElementById("adminLayout");
+const accessDeniedBoxEl = document.getElementById("accessDeniedBox");
 
 const totalCountEl = document.getElementById("totalCount");
 const basicCountEl = document.getElementById("basicCount");
@@ -48,6 +67,7 @@ let filteredEvaluations = [];
 let allTokens = [];
 let selectedEvaluationId = null;
 let gradeDistributionChart = null;
+let hasInitialized = false;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -87,6 +107,34 @@ function getBaseAppUrl() {
 
 function buildTokenLink(token) {
   return `${getBaseAppUrl()}?token=${encodeURIComponent(token)}`;
+}
+
+function isAdminUser(user) {
+  return !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+}
+
+function setLoggedOutView() {
+  adminLayoutEl.style.display = "none";
+  accessDeniedBoxEl.style.display = "none";
+  loginBtnEl.style.display = "inline-block";
+  logoutBtnEl.style.display = "none";
+  authStatusTextEl.textContent = "관리자 로그인이 필요합니다.";
+}
+
+function setDeniedView(user) {
+  adminLayoutEl.style.display = "none";
+  accessDeniedBoxEl.style.display = "block";
+  loginBtnEl.style.display = "none";
+  logoutBtnEl.style.display = "inline-block";
+  authStatusTextEl.textContent = `접속 계정: ${user.email}`;
+}
+
+function setAdminView(user) {
+  adminLayoutEl.style.display = "grid";
+  accessDeniedBoxEl.style.display = "none";
+  loginBtnEl.style.display = "none";
+  logoutBtnEl.style.display = "inline-block";
+  authStatusTextEl.textContent = `관리자 로그인: ${user.email}`;
 }
 
 function calculateSummary(data) {
@@ -670,16 +718,60 @@ function setupSidebarMenu() {
   });
 }
 
-levelFilterEl.addEventListener("change", applyFilters);
-sortFilterEl.addEventListener("change", applyFilters);
-searchInputEl.addEventListener("input", applyFilters);
-refreshBtnEl.addEventListener("click", loadEvaluations);
-downloadCsvBtnEl.addEventListener("click", downloadCsv);
+function bindStaticEvents() {
+  levelFilterEl.addEventListener("change", applyFilters);
+  sortFilterEl.addEventListener("change", applyFilters);
+  searchInputEl.addEventListener("input", applyFilters);
+  refreshBtnEl.addEventListener("click", loadEvaluations);
+  downloadCsvBtnEl.addEventListener("click", downloadCsv);
 
-generateTokensBtnEl.addEventListener("click", generateTokens);
-refreshTokensBtnEl.addEventListener("click", loadTokens);
-copyAllLinksBtnEl.addEventListener("click", copyAllLinks);
+  generateTokensBtnEl.addEventListener("click", generateTokens);
+  refreshTokensBtnEl.addEventListener("click", loadTokens);
+  copyAllLinksBtnEl.addEventListener("click", copyAllLinks);
 
-setupSidebarMenu();
-await loadEvaluations();
-await loadTokens();
+  setupSidebarMenu();
+}
+
+async function initializeAdminPage() {
+  if (!hasInitialized) {
+    bindStaticEvents();
+    hasInitialized = true;
+  }
+
+  await loadEvaluations();
+  await loadTokens();
+}
+
+loginBtnEl.addEventListener("click", async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error(error);
+    alert("로그인 중 오류가 발생했습니다.");
+  }
+});
+
+logoutBtnEl.addEventListener("click", async () => {
+  try {
+    await signOut(auth);
+  } catch (error) {
+    console.error(error);
+    alert("로그아웃 중 오류가 발생했습니다.");
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    setLoggedOutView();
+    return;
+  }
+
+  if (!isAdminUser(user)) {
+    setDeniedView(user);
+    return;
+  }
+
+  setAdminView(user);
+  await initializeAdminPage();
+});
