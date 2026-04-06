@@ -469,7 +469,6 @@ submitBtn.addEventListener("click", async () => {
         token: currentToken,
         level: currentLevel,
         levelTitle: sheetData[currentLevel].title,
-        levelDetail: tokenData.levelDetail || "",
         totalPossible,
         totalScore,
         comment,
