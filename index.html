@@ -22,19 +22,19 @@
       color: #222;
     }
 
-    :root {
-      --topbar-height: 76px;
-      --scorebar-height: 74px;
+    /* 상단 전체를 하나로 고정 */
+    .top-sticky-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      background: #f3f5f7;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
     }
 
     .topbar {
       background: #1f4e79;
       color: white;
-      padding: 16px;
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 14px 16px 12px;
     }
 
     .topbar-inner {
@@ -65,12 +65,9 @@
     }
 
     .sticky-score-wrap {
-      position: sticky;
-      top: 0;
-      z-index: 190;
       background: rgba(243, 245, 247, 0.98);
       backdrop-filter: blur(6px);
-      padding: 10px 12px;
+      padding: 10px 12px 12px;
       border-bottom: 1px solid #dce4ea;
     }
 
@@ -79,7 +76,6 @@
       margin: 0 auto;
       display: flex;
       gap: 10px;
-      padding-top: 0;
     }
 
     .score-box {
@@ -98,7 +94,7 @@
     .container {
       max-width: 980px;
       margin: 0 auto;
-      padding: 14px 12px 120px;
+      padding: 16px 12px 120px;
       overflow: visible;
     }
 
@@ -302,7 +298,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 300;
+      z-index: 400;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
       border-top: 1px solid #d8dee5;
@@ -340,7 +336,7 @@
 
     @media (max-width: 640px) {
       .topbar {
-        padding: 14px 12px;
+        padding: 14px 12px 12px;
       }
 
       .topbar h1 {
@@ -352,7 +348,7 @@
       }
 
       .sticky-score-wrap {
-        padding: 8px 10px;
+        padding: 8px 10px 10px;
       }
 
       .sticky-score-inner {
@@ -381,19 +377,21 @@
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <h1>지휘관 자격인증제 평가</h1>
-      <div class="topbar-sub">
-        <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+  <div class="top-sticky-wrap">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <h1>지휘관 자격인증제 평가</h1>
+        <div class="topbar-sub">
+          <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <div id="topSummaryBar" class="sticky-score-wrap">
-    <div class="sticky-score-inner">
-      <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
-      <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+    <div id="topSummaryBar" class="sticky-score-wrap">
+      <div class="sticky-score-inner">
+        <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
+        <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
+      </div>
     </div>
   </div>
 
