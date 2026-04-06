@@ -5,13 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>지휘관 자격인증제 평가</title>
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
+    html,
     body {
       margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    body {
       font-family: Arial, sans-serif;
       background: #f3f5f7;
       color: #222;
+    }
+
+    :root {
+      --topbar-height: 76px;
+      --scorebar-height: 74px;
     }
 
     .topbar {
@@ -20,8 +33,13 @@
       padding: 16px;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 200;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .topbar-inner {
+      max-width: 980px;
+      margin: 0 auto;
     }
 
     .topbar h1 {
@@ -48,8 +66,8 @@
 
     .sticky-score-wrap {
       position: sticky;
-      top: 72px;
-      z-index: 90;
+      top: 0;
+      z-index: 190;
       background: rgba(243, 245, 247, 0.98);
       backdrop-filter: blur(6px);
       padding: 10px 12px;
@@ -61,6 +79,7 @@
       margin: 0 auto;
       display: flex;
       gap: 10px;
+      padding-top: 0;
     }
 
     .score-box {
@@ -73,12 +92,14 @@
       text-align: center;
       font-size: 15px;
       border: 1px solid #d8e1ea;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .container {
       max-width: 980px;
       margin: 0 auto;
       padding: 14px 12px 120px;
+      overflow: visible;
     }
 
     .card {
@@ -87,6 +108,7 @@
       padding: 16px;
       margin-bottom: 14px;
       box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      overflow: visible;
     }
 
     .title-row {
@@ -280,7 +302,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 100;
+      z-index: 300;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
       border-top: 1px solid #d8dee5;
@@ -316,13 +338,11 @@
       cursor: not-allowed;
     }
 
-    @media (max-width: 1024px) {
-      .sticky-score-wrap {
-        top: 72px;
-      }
-    }
-
     @media (max-width: 640px) {
+      .topbar {
+        padding: 14px 12px;
+      }
+
       .topbar h1 {
         font-size: 20px;
       }
@@ -332,7 +352,7 @@
       }
 
       .sticky-score-wrap {
-        top: 74px;
+        padding: 8px 10px;
       }
 
       .sticky-score-inner {
@@ -362,13 +382,15 @@
 </head>
 <body>
   <header class="topbar">
-    <h1>지휘관 자격인증제 평가</h1>
-    <div class="topbar-sub">
-      <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+    <div class="topbar-inner">
+      <h1>지휘관 자격인증제 평가</h1>
+      <div class="topbar-sub">
+        <div id="tokenInfo" class="token-box">토큰 확인 중...</div>
+      </div>
     </div>
   </header>
 
-  <div class="sticky-score-wrap">
+  <div id="topSummaryBar" class="sticky-score-wrap">
     <div class="sticky-score-inner">
       <div class="score-box">현재 총점: <span id="currentScore">0</span>점</div>
       <div class="score-box">배점 합계: <span id="maxTotalScore">0</span>점</div>
