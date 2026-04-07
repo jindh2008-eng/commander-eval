@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>평가 결과 관리자</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="admin-shell">
+    <header class="admin-header">
+      <div class="admin-header-inner">
+        <h1 class="admin-title">평가 결과 관리자</h1>
+        <p class="admin-subtitle">과정별 평가 결과 조회 및 관리</p>
+      </div>
+    </header>
+
+    <section class="course-tab-section">
+      <div class="course-tabs" role="tablist" aria-label="과정 선택">
+        <button
+          type="button"
+          class="course-tab active"
+          data-page="pages/admin-beginner.html"
+          data-course="초급"
+          role="tab"
+          aria-selected="true"
+        >
+          초급과정 관리자
+        </button>
+
+        <button
+          type="button"
+          class="course-tab"
+          data-page="pages/admin-intermediate.html"
+          data-course="중급"
+          role="tab"
+          aria-selected="false"
+        >
+          중급과정 관리자
+        </button>
+
+        <button
+          type="button"
+          class="course-tab"
+          data-page="pages/admin-advanced.html"
+          data-course="고급"
+          role="tab"
+          aria-selected="false"
+        >
+          고급과정 관리자
+        </button>
+      </div>
+    </section>
+
+    <main class="admin-content">
+      <section class="content-frame">
+        <div id="course-content" class="course-content">
+          <div class="loading-box">초급과정 관리자 화면을 불러오는 중입니다.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="admin-beginner.js"></script>
+  <script type="module" src="admin-intermediate.js"></script>
+  <script src="admin-main.js"></script>
+
+</body>
+</html>
