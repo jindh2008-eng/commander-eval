@@ -1,1 +1,556 @@
+<div class="page-card" data-course-page="초급">
+  <h2 class="page-title">초급 평가 관리자</h2>
 
+  <h3 class="menu-title">관리 메뉴</h3>
+  <div class="menu-grid beginner-menu-grid">
+    <button
+      type="button"
+      class="menu-btn active"
+      data-target="beginner-token-create-section"
+    >
+      토큰 생성/배부
+    </button>
+
+    <button
+      type="button"
+      class="menu-btn"
+      data-target="beginner-token-manage-section"
+    >
+      토큰관리
+    </button>
+
+    <button
+      type="button"
+      class="menu-btn"
+      data-target="beginner-distribution-section"
+    >
+      평가항목별 점수분포
+    </button>
+
+    <button
+      type="button"
+      class="menu-btn"
+      data-target="beginner-delete-section"
+    >
+      저장데이터 검색 및 삭제
+    </button>
+
+    <button
+      type="button"
+      class="menu-btn"
+      data-target="beginner-detail-section"
+    >
+      평가세부내용
+    </button>
+  </div>
+
+  <!-- 1. 토큰 생성/배부 -->
+  <section
+    id="beginner-token-create-section"
+    class="admin-section-block beginner-section-block"
+  >
+    <div class="section-header-row">
+      <h3 class="section-title">토큰 생성/배부</h3>
+      <p class="section-desc">
+        유형과 회차를 입력하여 토큰을 생성하고 배부 링크를 복사합니다.
+      </p>
+    </div>
+
+    <div class="form-grid two-col">
+      <div class="form-field">
+        <label for="beginner-token-type">유형</label>
+        <select id="beginner-token-type">
+          <option value="평가">평가</option>
+          <option value="연습">연습</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-token-round">회차</label>
+        <div class="number-stepper">
+          <button
+            type="button"
+            class="stepper-btn"
+            id="beginner-token-round-decrease"
+            aria-label="회차 감소"
+          >
+            -
+          </button>
+
+          <input
+            type="number"
+            id="beginner-token-round"
+            min="1"
+            step="1"
+            value="1"
+            placeholder="회차 입력"
+          />
+
+          <button
+            type="button"
+            class="stepper-btn"
+            id="beginner-token-round-increase"
+            aria-label="회차 증가"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-token-count">생성 개수</label>
+        <input
+          type="number"
+          id="beginner-token-count"
+          min="1"
+          max="100"
+          value="5"
+          placeholder="생성 개수"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-token-label">표시 이름</label>
+        <input
+          type="text"
+          id="beginner-token-label"
+          placeholder="예: 평가-1회차 / 연습-2회차"
+        />
+      </div>
+    </div>
+
+    <div class="preview-box">
+      <div class="preview-title">생성 미리보기</div>
+      <div class="preview-value" id="beginner-token-preview">
+        초급 · 평가 · 1회차 · 5개 생성
+      </div>
+      <div class="preview-help">
+        실제 저장은 랜덤 토큰값으로 하고, 화면 표시와 검색은 유형/회차 기준으로
+        관리합니다.
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button type="button" class="primary-btn" id="beginner-create-token-btn">
+        토큰 생성
+      </button>
+      <button type="button" class="secondary-btn" id="beginner-reset-token-btn">
+        새로고침
+      </button>
+      <button type="button" class="secondary-btn" id="beginner-copy-link-btn">
+        링크 전체 복사
+      </button>
+    </div>
+
+    <div class="sub-card">
+      <div class="sub-card-header">
+        <h4>최근 생성 토큰 목록</h4>
+        <div class="inline-filter-row">
+          <select id="beginner-token-list-type-filter">
+            <option value="">전체 유형</option>
+            <option value="평가">평가</option>
+            <option value="연습">연습</option>
+          </select>
+
+          <select id="beginner-token-list-round-filter">
+            <option value="">전체 회차</option>
+          </select>
+
+          <button
+            type="button"
+            class="secondary-btn small-btn"
+            id="beginner-token-search-btn"
+          >
+            검색
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>유형</th>
+              <th>회차</th>
+              <th>표시 이름</th>
+              <th>토큰값</th>
+              <th>제출 여부</th>
+              <th>배부 링크</th>
+            </tr>
+          </thead>
+          <tbody id="beginner-token-list-body">
+            <tr>
+              <td colspan="6" class="empty-cell">생성된 토큰이 없습니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 토큰관리 -->
+  <section
+    id="beginner-token-manage-section"
+    class="admin-section-block beginner-section-block hidden-section"
+  >
+    <div class="section-header-row">
+      <h3 class="section-title">토큰관리</h3>
+      <p class="section-desc">
+        생성된 토큰 기준으로 유형과 회차를 선택하여 전체 토큰 수와 제출 수를
+        확인합니다.
+      </p>
+    </div>
+
+    <div class="form-grid two-col">
+      <div class="form-field">
+        <label for="beginner-token-manage-type">유형 선택</label>
+        <select id="beginner-token-manage-type">
+          <option value="">전체</option>
+          <option value="평가">평가</option>
+          <option value="연습">연습</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-token-manage-round">회차 선택</label>
+        <select id="beginner-token-manage-round">
+          <option value="">전체 회차</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button
+        type="button"
+        class="primary-btn"
+        id="beginner-token-manage-search-btn"
+      >
+        조회
+      </button>
+
+      <button
+        type="button"
+        class="danger-btn"
+        id="beginner-token-delete-selected-btn"
+      >
+        선택 삭제
+      </button>
+
+      <button
+        type="button"
+        class="danger-btn outline-danger"
+        id="beginner-token-delete-all-btn"
+      >
+        조건 전체삭제
+      </button>
+    </div>
+
+    <div class="info-grid compact-info-grid">
+      <div class="info-box">
+        <div class="info-label">전체 토큰 수</div>
+        <div class="info-value" id="beginner-token-total-count">0</div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-label">제출 수</div>
+        <div class="info-value" id="beginner-token-submitted-count">0</div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-label">미제출 수</div>
+        <div class="info-value" id="beginner-token-unsubmitted-count">0</div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-label">제출 비율</div>
+        <div class="info-value" id="beginner-token-submit-rate">0%</div>
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <h4>토큰 조회 결과</h4>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>선택</th>
+              <th>유형</th>
+              <th>회차</th>
+              <th>표시 이름</th>
+              <th>토큰값</th>
+              <th>제출 여부</th>
+              <th>제출일시</th>
+            </tr>
+          </thead>
+          <tbody id="beginner-token-manage-list-body">
+            <tr>
+              <td colspan="7" class="empty-cell">
+                조회된 토큰 데이터가 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 평가항목별 점수분포 -->
+  <section
+    id="beginner-distribution-section"
+    class="admin-section-block beginner-section-block hidden-section"
+  >
+    <div class="section-header-row">
+      <h3 class="section-title">평가항목별 점수분포</h3>
+      <p class="section-desc">
+        유형과 회차를 선택하여 총점 히스토그램, 항목별 점수분포, 불일치 판단 결과를 조회합니다.
+      </p>
+    </div>
+
+    <div class="form-grid two-col">
+      <div class="form-field">
+        <label for="beginner-distribution-type">유형 선택</label>
+        <select id="beginner-distribution-type">
+          <option value="평가">평가</option>
+          <option value="연습">연습</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-distribution-round">회차 선택</label>
+        <select id="beginner-distribution-round">
+          <option value="">회차 선택</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button
+        type="button"
+        class="primary-btn"
+        id="beginner-load-distribution-btn"
+      >
+        점수분포 조회
+      </button>
+      <button
+        type="button"
+        class="secondary-btn"
+        id="beginner-download-distribution-btn"
+      >
+        CSV 다운로드
+      </button>
+    </div>
+
+    <div class="sub-card">
+      <h4>총점 히스토그램</h4>
+      <div class="chart-placeholder" id="beginner-total-histogram-area">
+        선택한 유형/회차의 총점 히스토그램이 이 영역에 표시됩니다.
+      </div>
+
+      <div class="info-grid compact-info-grid" id="beginner-total-score-stats">
+        <div class="info-box">
+          <div class="info-label">평균 점수</div>
+          <div class="info-value">-</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">최고점</div>
+          <div class="info-value">-</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">최저점</div>
+          <div class="info-value">-</div>
+        </div>
+        <div class="info-box">
+          <div class="info-label">분포 형태</div>
+          <div class="info-value">-</div>
+        </div>
+      </div>
+
+      <div class="note-box" id="beginner-total-score-interpretation">
+        총점 분포 해석이 여기에 표시됩니다.
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <h4>평가항목별 점수분포 그래프</h4>
+      <div class="chart-placeholder" id="beginner-item-distribution-chart-area">
+        선택한 유형/회차의 평가항목별 점수분포 그래프가 이 영역에 표시됩니다.
+      </div>
+    </div>
+
+    <div class="sub-card">
+      <h4>평가항목별 점수분포 요약표</h4>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>평가항목</th>
+              <th>상</th>
+              <th>상 비율</th>
+              <th>중</th>
+              <th>중 비율</th>
+              <th>하</th>
+              <th>하 비율</th>
+              <th>총 평가 수</th>
+              <th>불일치 판단</th>
+            </tr>
+          </thead>
+          <tbody id="beginner-distribution-summary-body">
+            <tr>
+              <td colspan="9" class="empty-cell">
+                조회된 점수분포 데이터가 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="note-box" id="beginner-distribution-overall-summary">
+      전체 결과에 대한 한줄 요약이 여기에 표시됩니다.
+    </div>
+  </section>
+
+  <!-- 4. 저장데이터 검색 및 삭제 -->
+  <section
+    id="beginner-delete-section"
+    class="admin-section-block beginner-section-block hidden-section"
+  >
+    <div class="section-header-row">
+      <h3 class="section-title">저장데이터 검색 및 삭제</h3>
+      <p class="section-desc">
+        생성된 토큰 기준 회차 목록에서 선택하여 제출 데이터를 검색하고 삭제합니다.
+      </p>
+    </div>
+
+    <div class="form-grid two-col">
+      <div class="form-field">
+        <label for="beginner-delete-type">유형 선택</label>
+        <select id="beginner-delete-type">
+          <option value="">전체</option>
+          <option value="평가">평가</option>
+          <option value="연습">연습</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-delete-round">회차 선택</label>
+        <select id="beginner-delete-round">
+          <option value="">전체 회차</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button
+        type="button"
+        class="primary-btn"
+        id="beginner-search-delete-target-btn"
+      >
+        검색
+      </button>
+      <button
+        type="button"
+        class="danger-btn"
+        id="beginner-delete-selected-btn"
+      >
+        선택 삭제
+      </button>
+      <button
+        type="button"
+        class="danger-btn outline-danger"
+        id="beginner-delete-all-btn"
+      >
+        조건 전체삭제
+      </button>
+    </div>
+
+    <div class="sub-card">
+      <h4>삭제 대상 목록</h4>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>선택</th>
+              <th>유형</th>
+              <th>회차</th>
+              <th>토큰/제출자</th>
+              <th>총점</th>
+              <th>제출일시</th>
+            </tr>
+          </thead>
+          <tbody id="beginner-delete-list-body">
+            <tr>
+              <td colspan="6" class="empty-cell">
+                검색된 삭제 대상 데이터가 없습니다.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 평가세부내용 -->
+  <section
+    id="beginner-detail-section"
+    class="admin-section-block beginner-section-block hidden-section"
+  >
+    <div class="section-header-row">
+      <h3 class="section-title">평가세부내용</h3>
+      <p class="section-desc">
+        생성된 토큰 기준 회차 목록에서 선택하여 제출 목록을 조회하고, 목록을
+        클릭하면 평가표를 표시합니다.
+      </p>
+    </div>
+
+    <div class="form-grid two-col">
+      <div class="form-field">
+        <label for="beginner-detail-type">유형 선택</label>
+        <select id="beginner-detail-type">
+          <option value="평가">평가</option>
+          <option value="연습">연습</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label for="beginner-detail-round">회차 선택</label>
+        <select id="beginner-detail-round">
+          <option value="">회차 선택</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button
+        type="button"
+        class="primary-btn"
+        id="beginner-load-detail-list-btn"
+      >
+        목록 조회
+      </button>
+    </div>
+
+    <div class="detail-layout">
+      <div class="detail-list-panel sub-card">
+        <h4>제출 목록</h4>
+        <ul class="detail-list" id="beginner-detail-list">
+          <li class="detail-list-empty">조회된 제출 목록이 없습니다.</li>
+        </ul>
+      </div>
+
+      <div class="detail-view-panel sub-card">
+        <h4>평가표 상세 보기</h4>
+        <div class="detail-view-box" id="beginner-detail-view">
+          제출 목록을 클릭하면 해당 평가표가 여기에 표시됩니다.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="note-box">
+    초급 평가 관리자 화면은
+    <strong>유형(평가/연습)</strong>과
+    <strong>회차</strong>를 기준으로 토큰과 제출 데이터를 분리하여 관리하는
+    구조입니다.
+  </div>
+</div>
