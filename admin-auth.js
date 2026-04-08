@@ -12,7 +12,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const ADMIN_EMAILS = [
-  "your-email@gmail.com"
+  "jindh2008@gmail.com"
 ];
 
 const authGate = document.getElementById("auth-gate");
