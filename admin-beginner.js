@@ -624,7 +624,6 @@ const db = getFirestore(app);
   function getJudgementBadgeClass(judgement) {
     if (judgement === "경고") return "is-danger";
     if (judgement === "주의") return "is-warning";
-    if (judgement === "소수 이탈") return "is-outlier";
     return "is-normal";
   }
   function makeBarWidth(value, total) {
