@@ -12,7 +12,8 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const ADMIN_EMAILS = [
-  "jindh2008@gmail.com"
+  "jindh2008@gmail.com",
+  "isail78@naver.com"
 ];
 
 const authGate = document.getElementById("auth-gate");
@@ -54,7 +55,12 @@ async function handleLogin() {
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error("Admin login error:", error);
-    setMessage("로그인 중 오류가 발생했습니다.");
+    setMessage(`${error.code} | ${error.message}`);
+    console.log("error.code =", error.code);
+    console.log("error.message =", error.message);
+    console.log("error.customData =", error.customData);
+    console.log("error.full =", error);
+    // setMessage("로그인 중 오류가 발생했습니다.");
   }
 }
 
