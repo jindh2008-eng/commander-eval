@@ -633,7 +633,6 @@ const db = getFirestore(app);
   function getJudgementBadgeClass(judgement) {
     if (judgement === "경고") return "is-danger";
     if (judgement === "주의") return "is-warning";
-    if (judgement === "소수 이탈") return "is-outlier";
     return "is-normal";
   }
 
@@ -1028,7 +1027,11 @@ const db = getFirestore(app);
     body.innerHTML = rows
       .map((row) => `
         <tr>
-          <td>${escapeHtml(row.itemName)}</td>
+          <td>
+            <span class="category-item-judgement ${getJudgementBadgeClass(row.judgement)}">
+              ${escapeHtml(row.judgement)}
+            </span>
+          </td>
           <td>${row.상}</td>
           <td>${row.highPct.toFixed(1)}%</td>
           <td>${row.중}</td>
@@ -1045,14 +1048,13 @@ const db = getFirestore(app);
   function buildOverallSummary(rows, scoreSummary) {
     const warningCount = rows.filter((r) => r.judgement === "주의").length;
     const dangerCount = rows.filter((r) => r.judgement === "경고").length;
-    const outlierCount = rows.filter((r) => r.judgement === "소수 이탈").length;
-
+    
     if (dangerCount > 0) {
       return `총점 분포는 ${scoreSummary.interpretation} 경향이며, 일부 항목에서 평가 기준 편차가 크게 나타났습니다.`;
     }
-
-    if (warningCount > 0 || outlierCount > 0) {
-      return `전반적으로는 일관적이나 일부 항목에서 평가 기준 편차 또는 소수 이탈이 확인됩니다.`;
+    
+    if (warningCount > 0) {
+      return `전반적으로는 일관적이나 일부 항목에서 평가 기준 편차가 확인됩니다.`;
     }
 
     return `전반적으로 평가 결과는 비교적 일관적으로 나타났습니다.`;
