@@ -42,18 +42,20 @@ function setActiveTab(clickedTab) {
   clickedTab.setAttribute("aria-selected", "true");
 }
 
+
 courseTabs.forEach((tab) => {
   tab.addEventListener("click", async () => {
+    if (!window.currentAdminUser) return;
     setActiveTab(tab);
     await loadCoursePage(tab.dataset.page);
   });
 });
 
-window.addEventListener("DOMContentLoaded", async () => {
+window.startAdminApp = async function () {
   const defaultTab = document.querySelector('.course-tab[data-course="초급"]');
 
   if (defaultTab) {
     setActiveTab(defaultTab);
     await loadCoursePage(defaultTab.dataset.page);
   }
-});
+};
