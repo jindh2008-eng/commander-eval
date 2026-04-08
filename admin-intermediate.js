@@ -690,7 +690,7 @@ const db = getFirestore(app);
 
   function summarizeTotalScores(submissions) {
     const scores = submissions
-      .map((s) => Number(s.totalScore))
+      .map((s) => (Number(s.totalScore)) / 200) * 100)
       .filter((v) => Number.isFinite(v));
 
     if (!scores.length) {
