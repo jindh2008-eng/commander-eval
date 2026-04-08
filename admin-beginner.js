@@ -527,21 +527,21 @@ const db = getFirestore(app);
     const { 상, 중, 하, total } = row;
     if (!total) return "정상";
   
-    const maxVal = Math.max(상, 중, 하);
-    const maxPct = (maxVal / total) * 100;
+    const highPct = (상 / total) * 100;
   
-    // 🔴 경고 (극단 충돌)
-    if (상 > 0 && 하 > 0 && 중 <= 1) {
+    if (상 > 0 && 하 > 0 && Math.abs(상 - 하) <= 1 && (상 + 하) / total >= 0.6) {
       return "경고";
     }
   
-    // 🟢 정상
-    if (maxPct >= 70) {
+    if (상 > 0 && 하 > 0) {
+      return "주의";
+    }
+  
+    if (highPct >= 80) {
       return "정상";
     }
   
-    // 🟡 나머지 (주의 + 소수이탈 통합)
-    return "주의";
+    return "정상";
   }
 
   function summarizeDistribution(submissions) {
