@@ -868,9 +868,9 @@ const db = getFirestore(app);
     if (!summary.scores.length) {
       area.innerHTML = "선택한 유형/회차의 총점 데이터가 없습니다.";
       stats.innerHTML = `
-        <div class="info-box"><div class="info-label">평균 점수</div><div class="info-value">-</div></div>
         <div class="info-box"><div class="info-label">최고점</div><div class="info-value">-</div></div>
         <div class="info-box"><div class="info-label">최저점</div><div class="info-value">-</div></div>
+        <div class="info-box"><div class="info-label">평균 점수</div><div class="info-value">-</div></div>
         <div class="info-box"><div class="info-label">분포 형태</div><div class="info-value">-</div></div>
       `;
       interpretation.textContent = "총점 분포 해석이 없습니다.";
@@ -889,10 +889,6 @@ const db = getFirestore(app);
 
     stats.innerHTML = `
       <div class="info-box">
-        <div class="info-label">평균 점수</div>
-        <div class="info-value">${summary.average.toFixed(1)}</div>
-      </div>
-      <div class="info-box">
         <div class="info-label">최고점</div>
         <div class="info-value">${summary.max}</div>
       </div>
@@ -900,6 +896,11 @@ const db = getFirestore(app);
         <div class="info-label">최저점</div>
         <div class="info-value">${summary.min}</div>
       </div>
+      <div class="info-box">
+        <div class="info-label">평균 점수</div>
+        <div class="info-value">${summary.average.toFixed(1)}</div>
+      </div>
+
       <div class="info-box">
         <div class="info-label">분포 형태</div>
         <div class="info-value">${summary.interpretation}</div>
