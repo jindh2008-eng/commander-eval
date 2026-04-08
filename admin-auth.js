@@ -55,12 +55,7 @@ async function handleLogin() {
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error("Admin login error:", error);
-    setMessage(`${error.code} | ${error.message}`);
-    console.log("error.code =", error.code);
-    console.log("error.message =", error.message);
-    console.log("error.customData =", error.customData);
-    console.log("error.full =", error);
-    // setMessage("로그인 중 오류가 발생했습니다.");
+    setMessage("로그인 중 오류가 발생했습니다.");
   }
 }
 
