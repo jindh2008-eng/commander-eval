@@ -766,9 +766,9 @@ a:hover {
   
   /* 경고 */
   .is-danger {
-    background: #fde2e2;
-    color: #c62828;
-    border: 1px solid #ef9a9a;
+    background: #ffe5e5;
+    color: #d32f2f;
+    border: 1px solid #f5a3a3;
   }
   
   /* 소수이탈 */
