@@ -525,29 +525,23 @@ const db = getFirestore(app);
 
   function judgeItemConsistency(row) {
     const { 상, 중, 하, total } = row;
-    if (!total) return "데이터 없음";
-
-    const highPct = (상 / total) * 100;
-    const midPct = (중 / total) * 100;
-    const lowPct = (하 / total) * 100;
-
-    if (highPct >= 90 && 하 > 0) {
-      return "소수 이탈";
-    }
-
-    if (상 > 0 && 하 > 0 && Math.abs(상 - 하) <= 1 && (상 + 하) / total >= 0.6) {
+    if (!total) return "정상";
+  
+    const maxVal = Math.max(상, 중, 하);
+    const maxPct = (maxVal / total) * 100;
+  
+    // 🔴 경고 (극단 충돌)
+    if (상 > 0 && 하 > 0 && 중 <= 1) {
       return "경고";
     }
-
-    if (상 > 0 && 하 > 0) {
-      return "주의";
-    }
-
-    if (highPct >= 80 || midPct >= 80 || lowPct >= 80) {
+  
+    // 🟢 정상
+    if (maxPct >= 70) {
       return "정상";
     }
-
-    return "정상";
+  
+    // 🟡 나머지 (주의 + 소수이탈 통합)
+    return "주의";
   }
 
   function summarizeDistribution(submissions) {
