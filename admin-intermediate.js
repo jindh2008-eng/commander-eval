@@ -542,16 +542,22 @@ const db = getFirestore(app);
 
   function judgeItemConsistency(row) {
     const { 상, 중, 하, total } = row;
-    if (!total) return "데이터 없음";
-
+    if (!total) return "정상";
+  
     const highPct = (상 / total) * 100;
-    const midPct = (중 / total) * 100;
-    const lowPct = (하 / total) * 100;
-
-    if (highPct >= 90 && 하 > 0) return "소수 이탈";
-    if (상 > 0 && 하 > 0 && Math.abs(상 - 하) <= 1 && (상 + 하) / total >= 0.6) return "경고";
-    if (상 > 0 && 하 > 0) return "주의";
-    if (highPct >= 80 || midPct >= 80 || lowPct >= 80) return "정상";
+  
+    if (상 > 0 && 하 > 0 && Math.abs(상 - 하) <= 1 && (상 + 하) / total >= 0.6) {
+      return "경고";
+    }
+  
+    if (상 > 0 && 하 > 0) {
+      return "주의";
+    }
+  
+    if (highPct >= 80) {
+      return "정상";
+    }
+  
     return "정상";
   }
 
@@ -1014,7 +1020,7 @@ const db = getFirestore(app);
   function renderItemSummaryTable(rows) {
     const body = q("#intermediate-distribution-summary-body");
     if (!body) return;
-
+  
     if (!rows.length) {
       body.innerHTML = `
         <tr>
@@ -1023,15 +1029,11 @@ const db = getFirestore(app);
       `;
       return;
     }
-
+  
     body.innerHTML = rows
       .map((row) => `
         <tr>
-          <td>
-            <span class="category-item-judgement ${getJudgementBadgeClass(row.judgement)}">
-              ${escapeHtml(row.judgement)}
-            </span>
-          </td>
+          <td>${escapeHtml(row.itemName)}</td>
           <td>${row.상}</td>
           <td>${row.highPct.toFixed(1)}%</td>
           <td>${row.중}</td>
@@ -1039,7 +1041,11 @@ const db = getFirestore(app);
           <td>${row.하}</td>
           <td>${row.lowPct.toFixed(1)}%</td>
           <td>${row.total}</td>
-          <td>${escapeHtml(row.judgement)}</td>
+          <td>
+            <span class="category-item-judgement ${getJudgementBadgeClass(row.judgement)}">
+              ${escapeHtml(row.judgement)}
+            </span>
+          </td>
         </tr>
       `)
       .join("");
