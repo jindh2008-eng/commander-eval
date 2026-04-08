@@ -639,13 +639,13 @@ a:hover {
 }
 
 .category-item-judgement.is-warning {
-  background: #fff4e8;
+  background: #fff4e5;
   color: #ef6c00;
   border-color: #ffd7b1;
 }
 
 .category-item-judgement.is-danger {
-  background: #fdecec;
+  background: #fdecea;
   color: #c62828;
   border-color: #f3c1c1;
 }
