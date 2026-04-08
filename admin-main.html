@@ -5,6 +5,98 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>평가 결과 관리자</title>
   <link rel="stylesheet" href="admin.css" />
+  <style>
+  .auth-gate {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #eef3f8;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 460px;
+    background: #ffffff;
+    border: 1px solid #d7e0ea;
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 10px 24px rgba(31, 79, 130, 0.08);
+    text-align: center;
+  }
+
+  .auth-title {
+    margin: 0 0 12px;
+    font-size: 30px;
+    font-weight: 800;
+    color: #1f4f82;
+  }
+
+  .auth-desc {
+    margin: 0 0 22px;
+    color: #5b7187;
+    line-height: 1.6;
+  }
+
+  .auth-login-btn {
+    border: none;
+    border-radius: 14px;
+    background: #1f4f82;
+    color: #ffffff;
+    padding: 14px 18px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .auth-login-btn:hover {
+    background: #173b60;
+  }
+
+  .auth-message {
+    margin: 18px 0 0;
+    color: #a23b3b;
+    font-size: 14px;
+    min-height: 20px;
+  }
+
+  .admin-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .admin-user-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .admin-user-email {
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0.95;
+  }
+
+  .admin-logout-btn {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .admin-logout-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+</style>
 </head>
 <body>
   <div id="auth-gate" class="auth-gate">
