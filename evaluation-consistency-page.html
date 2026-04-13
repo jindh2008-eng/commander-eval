@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>평가 일관성 분석 기준</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", Arial, sans-serif;
+      background: #f5f7fb;
+      color: #1f2937;
+      line-height: 1.65;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: white;
+      border-radius: 20px;
+      padding: 36px 28px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 14px;
+      font-size: 2rem;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 26px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: center;
+    }
+
+    th {
+      background: #374151;
+      color: white;
+    }
+
+    .badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    .normal { background: #dcfce7; color: #166534; }
+    .caution { background: #fef3c7; color: #92400e; }
+    .warning { background: #fee2e2; color: #991b1b; }
+
+    .box {
+      background: #eff6ff;
+      padding: 18px;
+      border-left: 5px solid #2563eb;
+      border-radius: 10px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .quote {
+      background: #111827;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 12px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="hero">
+      <h1>평가 일관성 분석 기준</h1>
+      <p>
+        이 차트는 훈련생 평가가 아니라  
+        평가자들이 같은 기준으로 판단하고 있는지를 확인하기 위한 도구입니다.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>판정 기준</h2>
+
+      <table>
+        <tr>
+          <th>구분</th>
+          <th>판단 기준</th>
+          <th>의미</th>
+        </tr>
+        <tr>
+          <td><span class="badge normal">정상</span></td>
+          <td>상·중·하 중 하나가 80% 이상</td>
+          <td>평가 기준이 공유됨</td>
+        </tr>
+        <tr>
+          <td><span class="badge caution">주의</span></td>
+          <td>상과 하가 함께 존재</td>
+          <td>기준이 사람마다 다름</td>
+        </tr>
+        <tr>
+          <td><span class="badge warning">경고</span></td>
+          <td>상과 하가 비슷하게 다수 존재</td>
+          <td>기준 충돌 상태</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>차트 해석</h2>
+
+      <p><b>정상</b> → 평가자들이 같은 기준으로 판단</p>
+      <p><b>주의</b> → 판단 기준이 조금씩 다름</p>
+      <p><b>경고</b> → 같은 상황을 완전히 다르게 해석</p>
+
+    </div>
+
+    <div class="card">
+      <h2>평가 테스트 목적</h2>
+
+      <div class="box">
+        우리가 이 평가를 하는 이유는  
+        같은 상황에서도 평가자마다 판단이 달라질 수 있기 때문입니다.  
+        <br><br>
+        예비평가를 통해 다른 평가자들과 내 점수를 비교하면서  
+        내 기준을 점검하고 정립하는 것이 중요합니다.  
+        <br><br>
+        이 차트는 결과를 보는 것이 아니라  
+        평가 기준의 차이를 확인하기 위한 도구입니다.
+      </div>
+
+    </div>
+
+    <div class="card">
+      <h2>분석 목표</h2>
+
+      <ul>
+        <li>다른 평가자와 비교하여 내 기준 점검</li>
+        <li>판단 기준의 일관성 확인 및 개선</li>
+        <li>차트를 통해 기준 차이 시각적으로 확인</li>
+        <li>평가의 공정성과 신뢰성 확보</li>
+      </ul>
+
+      <div class="quote">
+        이 평가는 점수를 맞추는 것이 아니라  
+        기준을 맞추는 과정입니다
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>
