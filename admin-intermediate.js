@@ -67,6 +67,9 @@ const db = getFirestore(app);
   let currentSubmissions = [];
   let totalHistogramChart = null;
 
+  let manageSort = { col: null, dir: 1 };
+  let deleteSort  = { col: null, dir: 1 };
+
   function normalizeRoundNumber(value) {
     const num = Number(value);
     if (!Number.isFinite(num) || num < 1) return 1;
@@ -97,6 +100,51 @@ const db = getFirestore(app);
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
+  }
+
+  function sortData(data, col, dir) {
+    if (!col) return data;
+    return [...data].sort((a, b) => {
+      let va = a[col] ?? "";
+      let vb = b[col] ?? "";
+      if (col === "submittedAt") { va = va?.seconds ?? 0; vb = vb?.seconds ?? 0; }
+      if (col === "round" || col === "totalScore") { va = Number(va) || 0; vb = Number(vb) || 0; }
+      if (col === "submitted") { va = va ? 1 : 0; vb = vb ? 1 : 0; }
+      if (va < vb) return -dir;
+      if (va > vb) return dir;
+      return 0;
+    });
+  }
+
+  function applySortHeader(tableSelector, sortState, onSort) {
+    const page = getPage();
+    if (!page) return;
+    page.querySelectorAll(`${tableSelector} .sortable-th`).forEach((th) => {
+      th.classList.remove("sort-asc", "sort-desc");
+      if (th.dataset.sort === sortState.col) {
+        th.classList.add(sortState.dir === 1 ? "sort-asc" : "sort-desc");
+        const arrow = th.querySelector(".sort-arrow");
+        if (arrow) arrow.textContent = sortState.dir === 1 ? "↑" : "↓";
+      } else {
+        const arrow = th.querySelector(".sort-arrow");
+        if (arrow) arrow.textContent = "↕";
+      }
+      th.onclick = () => {
+        const col = th.dataset.sort;
+        if (sortState.col === col) { sortState.dir *= -1; } else { sortState.col = col; sortState.dir = 1; }
+        onSort();
+      };
+    });
+  }
+
+  function syncMasterCheck(masterCheckSelector, itemCheckSelector) {
+    const master = q(masterCheckSelector);
+    if (!master) return;
+    const items = qa(itemCheckSelector);
+    if (!items.length) { master.checked = false; master.indeterminate = false; return; }
+    const checkedCount = items.filter((el) => el.checked).length;
+    master.indeterminate = checkedCount > 0 && checkedCount < items.length;
+    master.checked = checkedCount === items.length;
   }
 
   function formatDateTime(value) {
@@ -136,6 +184,14 @@ const db = getFirestore(app);
   function setText(selector, value) {
     const el = q(selector);
     if (el) el.textContent = value;
+  }
+
+  function makeQRDataUrl(text, cellSize = 3) {
+    if (typeof qrcode !== "function") return "";
+    const qr = qrcode(0, "M");
+    qr.addData(text);
+    qr.make();
+    return qr.createDataURL(cellSize, 0);
   }
 
   function buildShareUrl(token) {
@@ -178,11 +234,15 @@ const db = getFirestore(app);
     return currentSubmissions;
   }
 
-  function filterTokens(tokens, type = "", round = "") {
+  function filterTokens(tokens, type = "", round = "", submitted = "") {
     return tokens.filter((token) => {
       const typeMatch = !type || token.type === type;
       const roundMatch = !round || String(token.round) === String(round);
-      return typeMatch && roundMatch;
+      const submittedMatch =
+        !submitted ||
+        (submitted === "submitted" && token.submitted) ||
+        (submitted === "unsubmitted" && !token.submitted);
+      return typeMatch && roundMatch && submittedMatch;
     });
   }
 
@@ -202,9 +262,20 @@ const db = getFirestore(app);
       .sort((a, b) => a - b);
   }
 
+  function getTypeFromToggles(groupName) {
+    const active = q(`.toggle-btn.active[data-group="${groupName}"]`);
+    return active ? active.dataset.value : "평가";
+  }
+
+  function activateSingleToggle(groupName, btn) {
+    qa(`.toggle-btn[data-group="${groupName}"]`).forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
   function populateRoundSelect(selectSelector, options = {}) {
     const {
       typeSelector = null,
+      typeValue = null,
       includeAll = false,
       placeholder = "회차 선택",
       preserveValue = true,
@@ -214,7 +285,9 @@ const db = getFirestore(app);
     if (!select) return;
 
     const previousValue = preserveValue ? select.value : "";
-    const type = typeSelector ? q(typeSelector)?.value || "" : "";
+    const type = typeValue !== null ? typeValue
+               : typeSelector ? q(typeSelector)?.value || ""
+               : "";
     const rounds = getAvailableRounds(type);
 
     const firstOption = includeAll
@@ -234,35 +307,35 @@ const db = getFirestore(app);
 
   function renderRoundSelects() {
     populateRoundSelect("#intermediate-token-list-round-filter", {
-      typeSelector: "#intermediate-token-list-type-filter",
+      typeValue: getTypeFromToggles("token-list-type"),
       includeAll: true,
     });
 
     populateRoundSelect("#intermediate-token-manage-round", {
-      typeSelector: "#intermediate-token-manage-type",
+      typeValue: getTypeFromToggles("manage-type"),
       includeAll: true,
     });
 
     populateRoundSelect("#intermediate-distribution-round", {
-      typeSelector: "#intermediate-distribution-type",
+      typeValue: getTypeFromToggles("distribution-type"),
       includeAll: false,
       placeholder: "회차 선택",
     });
 
     populateRoundSelect("#intermediate-delete-round", {
-      typeSelector: "#intermediate-delete-type",
+      typeValue: getTypeFromToggles("delete-type"),
       includeAll: true,
     });
 
     populateRoundSelect("#intermediate-detail-round", {
-      typeSelector: "#intermediate-detail-type",
+      typeValue: getTypeFromToggles("detail-type"),
       includeAll: false,
       placeholder: "회차 선택",
     });
   }
 
   function updatePreview() {
-    const type = q("#intermediate-token-type")?.value || "평가";
+    const type = getTypeFromToggles("create-type");
     const roundNumber = normalizeRoundNumber(q("#intermediate-token-round")?.value || 1);
     const count = Math.max(1, Number(q("#intermediate-token-count")?.value || 1));
     const preview = q("#intermediate-token-preview");
@@ -273,12 +346,13 @@ const db = getFirestore(app);
   }
 
   function resetTokenForm() {
-    const type = q("#intermediate-token-type");
+    const typeToggle = q('.toggle-btn[data-group="create-type"][data-value="평가"]');
+    if (typeToggle) activateSingleToggle("create-type", typeToggle);
+
     const round = q("#intermediate-token-round");
     const count = q("#intermediate-token-count");
     const label = q("#intermediate-token-label");
 
-    if (type) type.value = "평가";
     if (round) round.value = "1";
     if (count) count.value = "5";
     if (label) label.value = "";
@@ -287,7 +361,7 @@ const db = getFirestore(app);
   }
 
   async function createTokens() {
-    const type = q("#intermediate-token-type")?.value || "평가";
+    const type = getTypeFromToggles("create-type");
     const roundNumber = normalizeRoundNumber(q("#intermediate-token-round")?.value || 1);
     const count = Math.max(1, Number(q("#intermediate-token-count")?.value || 1));
     const labelInput = q("#intermediate-token-label")?.value.trim();
@@ -318,6 +392,8 @@ const db = getFirestore(app);
       });
     }
 
+    const btn = q("#intermediate-create-token-btn");
+    setButtonLoading(btn, true, "생성 중...");
     try {
       for (const token of newTokens) {
         await addDoc(collection(db, "evaluationTokens"), {
@@ -333,20 +409,22 @@ const db = getFirestore(app);
       }
 
       await renderAll();
-      alert(`${newTokens.length}개의 토큰을 생성했습니다.`);
+      showToast(`${newTokens.length}개의 토큰을 생성했습니다.`, "success");
     } catch (error) {
       console.error("Firebase token save error:", error);
-      alert(`토큰을 Firebase에 저장하는 중 오류가 발생했습니다.\n${error.message}`);
+      showToast(`토큰 저장 중 오류가 발생했습니다. ${error.message}`, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   }
 
   async function copyAllLinks() {
-    const typeFilter = q("#intermediate-token-list-type-filter")?.value || "";
+    const typeFilter = getTypeFromToggles("token-list-type");
     const roundFilter = q("#intermediate-token-list-round-filter")?.value || "";
     const tokens = filterTokens(currentTokens, typeFilter, roundFilter);
 
     if (tokens.length === 0) {
-      alert("복사할 토큰이 없습니다.");
+      showToast("복사할 토큰이 없습니다.", "warning");
       return;
     }
 
@@ -356,63 +434,175 @@ const db = getFirestore(app);
 
     try {
       await navigator.clipboard.writeText(text);
-      alert("링크 전체를 복사했습니다.");
+      showToast(`${tokens.length}개 링크를 복사했습니다.`, "success");
     } catch {
-      alert("클립보드 복사에 실패했습니다.");
+      showToast("클립보드 복사에 실패했습니다.", "error");
     }
   }
 
-  function renderRecentTokenList() {
+  async function renderRecentTokenList() {
     const body = q("#intermediate-token-list-body");
     if (!body) return;
 
-    const typeFilter = q("#intermediate-token-list-type-filter")?.value || "";
+    const typeFilter = getTypeFromToggles("token-list-type");
     const roundFilter = q("#intermediate-token-list-round-filter")?.value || "";
     const tokens = filterTokens(currentTokens, typeFilter, roundFilter);
 
     if (tokens.length === 0) {
       body.innerHTML = `
         <tr>
-          <td colspan="6" class="empty-cell">생성된 토큰이 없습니다.</td>
+          <td colspan="8" class="empty-cell">생성된 토큰이 없습니다.</td>
         </tr>
       `;
       return;
     }
 
-    body.innerHTML = tokens
-      .slice(0, 30)
-      .map((token) => {
-        const link = buildShareUrl(token);
-        return `
-          <tr>
-            <td>${escapeHtml(token.type)}</td>
-            <td>${escapeHtml(roundLabel(token.round))}</td>
-            <td>${escapeHtml(token.displayName)}</td>
-            <td>${escapeHtml(token.tokenValue)}</td>
-            <td>${token.submitted ? "제출" : "미제출"}</td>
-            <td><a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">링크</a></td>
-          </tr>
-        `;
-      })
-      .join("");
+    const rows = tokens.slice(0, 30).map((token) => {
+      const link = buildShareUrl(token);
+      return `
+        <tr>
+          <td>${escapeHtml(token.type)}</td>
+          <td>${escapeHtml(roundLabel(token.round))}</td>
+          <td>${escapeHtml(token.displayName)}</td>
+          <td>${escapeHtml(token.tokenValue)}</td>
+          <td>${token.submitted ? "제출" : "미제출"}</td>
+          <td class="qr-cell"><img class="qr-img" data-link="${escapeHtml(link)}" alt="QR" width="48" height="48" /></td>
+          <td><a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">열기</a></td>
+          <td><button type="button" class="copy-link-btn" data-link="${escapeHtml(link)}">복사</button></td>
+        </tr>
+      `;
+    });
+    body.innerHTML = rows.join("");
+
+    qa(".qr-img", body).forEach((img) => {
+      const src = makeQRDataUrl(img.dataset.link, 3);
+      if (src) img.src = src;
+    });
+
+    qa(".copy-link-btn", body).forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(btn.dataset.link);
+          showToast("링크를 복사했습니다.", "success", 1800);
+        } catch {
+          showToast("클립보드 복사에 실패했습니다.", "error");
+        }
+      });
+    });
+  }
+
+  async function generateTokenPDF() {
+    const typeFilter = getTypeFromToggles("token-list-type");
+    const roundFilter = q("#intermediate-token-list-round-filter")?.value || "";
+    const tokens = filterTokens(currentTokens, typeFilter, roundFilter);
+
+    if (!tokens.length) {
+      showToast("PDF로 저장할 토큰이 없습니다.", "warning");
+      return;
+    }
+
+    const btn = q("#intermediate-save-pdf-btn");
+    setButtonLoading(btn, true, "PDF 생성 중...");
+
+    try {
+      const groups = new Map();
+      tokens.forEach((t) => {
+        const r = Number(t.round) || 0;
+        if (!groups.has(r)) groups.set(r, []);
+        groups.get(r).push(t);
+      });
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const margin = 10;
+      const usableW = pdf.internal.pageSize.getWidth() - margin * 2;
+      const usableH = pdf.internal.pageSize.getHeight() - margin * 2;
+      const pxW = Math.floor(usableW * 3.78);
+
+      const wrap = document.createElement("div");
+      wrap.style.cssText = `position:fixed;left:-9999px;top:0;width:${pxW}px;background:#fff;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;`;
+      document.body.appendChild(wrap);
+
+      let html = '<div style="padding:10px;">';
+      html += `<h2 style="margin:0 0 3px;font-size:16px;color:#1f4f82;">중급 토큰 배부 목록</h2>`;
+      html += `<p style="margin:0 0 14px;color:#666;font-size:11px;">${escapeHtml(typeFilter)} · ${roundFilter ? roundFilter + '회차' : '전체'} · 총 ${tokens.length}개</p>`;
+
+      [...groups.keys()].sort((a, b) => a - b).forEach((round) => {
+        const list = groups.get(round);
+        html += `<div style="margin-top:14px;margin-bottom:8px;font-size:14px;font-weight:800;color:#1f4f82;border-bottom:2px solid #1f4f82;padding-bottom:3px;">${escapeHtml(roundLabel(round))}</div>`;
+
+        for (let i = 0; i < list.length; i += 3) {
+          const row = list.slice(i, i + 3);
+          html += '<div style="display:flex;gap:10px;margin-bottom:10px;">';
+          row.forEach((token) => {
+            const link = buildShareUrl(token);
+            const qr = makeQRDataUrl(link, 4);
+            html += `
+              <div style="flex:1;text-align:center;border:1px solid #ccc;border-radius:8px;padding:8px 4px;">
+                <div style="font-size:11px;font-weight:700;color:#36536f;margin-bottom:4px;">${escapeHtml(roundLabel(round))}</div>
+                <img src="${qr}" width="100" height="100" style="display:block;margin:0 auto;" />
+                <div style="font-size:12px;font-weight:800;color:#1f2d3d;margin-top:4px;letter-spacing:1px;">${escapeHtml(token.tokenValue)}</div>
+              </div>`;
+          });
+          for (let j = row.length; j < 3; j++) html += '<div style="flex:1;"></div>';
+          html += '</div>';
+        }
+      });
+
+      html += '</div>';
+      wrap.innerHTML = html;
+
+      const canvas = await html2canvas(wrap, { scale: 2, backgroundColor: "#fff" });
+      wrap.remove();
+
+      const imgW = usableW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let yRemain = imgH;
+      let srcY = 0;
+      let page = 0;
+
+      while (yRemain > 0) {
+        if (page > 0) pdf.addPage();
+        const sliceH = Math.min(yRemain, usableH);
+        const srcPx = Math.round((sliceH / imgH) * canvas.height);
+        const slice = document.createElement("canvas");
+        slice.width = canvas.width;
+        slice.height = srcPx;
+        slice.getContext("2d").drawImage(canvas, 0, srcY, canvas.width, srcPx, 0, 0, canvas.width, srcPx);
+        pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, margin, imgW, sliceH);
+        srcY += srcPx;
+        yRemain -= usableH;
+        page++;
+      }
+
+      pdf.save(`중급_토큰배부_${typeFilter}_${roundFilter || '전체'}회차.pdf`);
+      showToast(`PDF를 저장했습니다. (${tokens.length}개)`, "success");
+    } catch (err) {
+      console.error("PDF error:", err);
+      showToast("PDF 생성 중 오류가 발생했습니다.", "error");
+    } finally {
+      setButtonLoading(btn, false);
+    }
   }
 
   function renderTokenManage() {
     const body = q("#intermediate-token-manage-list-body");
     if (!body) return;
 
-    const type = q("#intermediate-token-manage-type")?.value || "";
+    const type = getTypeFromToggles("manage-type");
     const roundValue = q("#intermediate-token-manage-round")?.value || "";
     const round = roundValue ? Number(roundValue) : "";
-    const tokens = filterTokens(currentTokens, type, round);
+    const activeSub = q('.toggle-btn.active[data-group="manage-submitted"]');
+    const submitted = activeSub ? activeSub.dataset.value : "";
+    const tokens = sortData(filterTokens(currentTokens, type, round, submitted), manageSort.col, manageSort.dir);
 
     const total = tokens.length;
-    const submitted = tokens.filter((t) => t.submitted).length;
-    const unsubmitted = total - submitted;
-    const rate = total === 0 ? 0 : (submitted / total) * 100;
+    const submittedCount = tokens.filter((t) => t.submitted).length;
+    const unsubmitted = total - submittedCount;
+    const rate = total === 0 ? 0 : (submittedCount / total) * 100;
 
     setText("#intermediate-token-total-count", String(total));
-    setText("#intermediate-token-submitted-count", String(submitted));
+    setText("#intermediate-token-submitted-count", String(submittedCount));
     setText("#intermediate-token-unsubmitted-count", String(unsubmitted));
     setText("#intermediate-token-submit-rate", `${rate.toFixed(1)}%`);
 
@@ -440,95 +630,79 @@ const db = getFirestore(app);
         </tr>
       `)
       .join("");
+
+    qa(".intermediate-token-manage-check", body).forEach((cb) => {
+      cb.addEventListener("change", () => syncMasterCheck("#intermediate-token-manage-master-check", ".intermediate-token-manage-check"));
+    });
+
+    syncMasterCheck("#intermediate-token-manage-master-check", ".intermediate-token-manage-check");
+    applySortHeader("#intermediate-token-manage-list-body", manageSort, renderTokenManage);
   }
 
   async function deleteSelectedTokens() {
     const checkedIds = qa(".intermediate-token-manage-check:checked").map((el) => el.value);
 
-    if (checkedIds.length === 0) {
-      alert("선택된 토큰이 없습니다.");
-      return;
-    }
+    if (checkedIds.length === 0) { showToast("선택된 토큰이 없습니다.", "warning"); return; }
 
     const targetTokens = currentTokens.filter((token) => checkedIds.includes(token.id));
-    if (targetTokens.length === 0) {
-      alert("삭제할 토큰을 찾지 못했습니다.");
-      return;
-    }
+    if (targetTokens.length === 0) { showToast("삭제할 토큰을 찾지 못했습니다.", "error"); return; }
 
-    const hasSubmittedToken = targetTokens.some((token) => token.submitted);
-    const message = hasSubmittedToken
-      ? `선택한 ${targetTokens.length}개의 토큰을 삭제합니다.\n연결된 제출 데이터도 함께 삭제됩니다.\n계속할까요?`
+    const hasSubmitted = targetTokens.some((t) => t.submitted);
+    const msg = hasSubmitted
+      ? `선택한 ${targetTokens.length}개 토큰과 연결된 제출 데이터도 함께 삭제됩니다. 계속할까요?`
       : `선택한 ${targetTokens.length}개의 토큰을 삭제할까요?`;
+    if (!confirm(msg)) return;
 
-    if (!confirm(message)) return;
-
+    const btn = q("#intermediate-token-delete-selected-btn");
+    setButtonLoading(btn, true, "삭제 중...");
     try {
       const batch = writeBatch(db);
-      const tokenValuesToDelete = new Set(targetTokens.map((token) => token.tokenValue));
-
-      targetTokens.forEach((token) => {
-        batch.delete(doc(db, "evaluationTokens", token.id));
-      });
-
-      currentSubmissions
-        .filter((sub) => tokenValuesToDelete.has(sub.tokenValue))
-        .forEach((sub) => {
-          batch.delete(doc(db, "evaluationSubmissions", sub.id));
-        });
-
+      const vals = new Set(targetTokens.map((t) => t.tokenValue));
+      targetTokens.forEach((t) => batch.delete(doc(db, "evaluationTokens", t.id)));
+      currentSubmissions.filter((s) => vals.has(s.tokenValue))
+        .forEach((s) => batch.delete(doc(db, "evaluationSubmissions", s.id)));
       await batch.commit();
       await renderAll();
-      alert("선택한 토큰을 삭제했습니다.");
+      showToast("선택한 토큰을 삭제했습니다.", "success");
     } catch (error) {
       console.error(error);
-      alert(`토큰 삭제 중 오류가 발생했습니다.\n${error.message}`);
+      showToast(`삭제 중 오류가 발생했습니다. ${error.message}`, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   }
 
   async function deleteAllFilteredTokens() {
-    const type = q("#intermediate-token-manage-type")?.value || "";
+    const type = getTypeFromToggles("manage-type");
     const roundValue = q("#intermediate-token-manage-round")?.value || "";
     const round = roundValue ? Number(roundValue) : "";
     const targets = filterTokens(currentTokens, type, round);
 
-    if (targets.length === 0) {
-      alert("삭제할 토큰이 없습니다.");
-      return;
-    }
+    if (targets.length === 0) { showToast("삭제할 토큰이 없습니다.", "warning"); return; }
 
-    const hasSubmittedToken = targets.some((token) => token.submitted);
-    const labelParts = [];
-    if (type) labelParts.push(type);
-    if (round) labelParts.push(roundLabel(round));
-    const conditionLabel = labelParts.length ? labelParts.join(" / ") : "전체 조건";
+    const hasSubmitted = targets.some((t) => t.submitted);
+    const label = [type, round ? roundLabel(round) : ""].filter(Boolean).join(" / ") || "전체 조건";
+    const msg = hasSubmitted
+      ? `[${label}] 토큰 ${targets.length}개와 연결된 제출 데이터를 모두 삭제합니다. 계속할까요?`
+      : `[${label}] 토큰 ${targets.length}개를 전체 삭제할까요?`;
+    if (!confirm(msg)) return;
 
-    const message = hasSubmittedToken
-      ? `[${conditionLabel}] 조건의 토큰 ${targets.length}개를 전체 삭제합니다.\n연결된 제출 데이터도 함께 삭제됩니다.\n계속할까요?`
-      : `[${conditionLabel}] 조건의 토큰 ${targets.length}개를 전체 삭제할까요?`;
-
-    if (!confirm(message)) return;
-
+    const btn = q("#intermediate-token-delete-all-btn");
+    setButtonLoading(btn, true, "삭제 중...");
     try {
       const batch = writeBatch(db);
-      const tokenValuesToDelete = new Set(targets.map((token) => token.tokenValue));
-
-      targets.forEach((token) => {
-        batch.delete(doc(db, "evaluationTokens", token.id));
-      });
-
-      currentSubmissions
-        .filter((sub) => tokenValuesToDelete.has(sub.tokenValue))
-        .forEach((sub) => {
-          batch.delete(doc(db, "evaluationSubmissions", sub.id));
-        });
-
+      const vals = new Set(targets.map((t) => t.tokenValue));
+      targets.forEach((t) => batch.delete(doc(db, "evaluationTokens", t.id)));
+      currentSubmissions.filter((s) => vals.has(s.tokenValue))
+        .forEach((s) => batch.delete(doc(db, "evaluationSubmissions", s.id)));
       await batch.commit();
       await renderAll();
-      alert("조건에 해당하는 토큰을 삭제했습니다.");
+      showToast("조건에 해당하는 토큰을 삭제했습니다.", "success");
     } catch (error) {
       console.error(error);
-      alert(`조건 전체삭제 중 오류가 발생했습니다.\n${error.message}`);
+      showToast(`삭제 중 오류가 발생했습니다. ${error.message}`, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   }
 
@@ -1066,8 +1240,20 @@ const db = getFirestore(app);
     return `전반적으로 평가 결과는 비교적 일관적으로 나타났습니다.`;
   }
 
+  function saveChartAsPng() {
+    const canvas = q("#intermediate-total-histogram-canvas");
+    if (!canvas) { showToast("저장할 차트가 없습니다.", "warning"); return; }
+    const type = getTypeFromToggles("distribution-type");
+    const round = q("#intermediate-distribution-round")?.value || "unknown";
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `중급_히스토그램_${type}_${round}회차.png`;
+    a.click();
+    showToast("차트 이미지를 저장했습니다.", "success");
+  }
+
   function renderDistribution() {
-    const type = q("#intermediate-distribution-type")?.value || "평가";
+    const type = getTypeFromToggles("distribution-type");
     const roundValue = q("#intermediate-distribution-round")?.value || "";
     const overallSummary = q("#intermediate-distribution-overall-summary");
     const totalArea = q("#intermediate-total-histogram-area");
@@ -1102,10 +1288,10 @@ const db = getFirestore(app);
   }
 
   function renderDeleteList() {
-    const type = q("#intermediate-delete-type")?.value || "";
+    const type = getTypeFromToggles("delete-type");
     const roundValue = q("#intermediate-delete-round")?.value || "";
     const round = roundValue ? Number(roundValue) : "";
-    const submissions = filterSubmissions(currentSubmissions, type, round);
+    const submissions = sortData(filterSubmissions(currentSubmissions, type, round), deleteSort.col, deleteSort.dir);
     const body = q("#intermediate-delete-list-body");
 
     if (!body) return;
@@ -1131,76 +1317,72 @@ const db = getFirestore(app);
         </tr>
       `)
       .join("");
+
+    qa(".intermediate-delete-check", body).forEach((cb) => {
+      cb.addEventListener("change", () => syncMasterCheck("#intermediate-delete-master-check", ".intermediate-delete-check"));
+    });
+
+    syncMasterCheck("#intermediate-delete-master-check", ".intermediate-delete-check");
+    applySortHeader("#intermediate-delete-list-body", deleteSort, renderDeleteList);
   }
 
   async function deleteSelectedSubmissions() {
     const checked = qa(".intermediate-delete-check:checked").map((el) => el.value);
-
-    if (checked.length === 0) {
-      alert("선택된 데이터가 없습니다.");
-      return;
-    }
-
+    if (checked.length === 0) { showToast("선택된 데이터가 없습니다.", "warning"); return; }
     if (!confirm(`선택한 ${checked.length}건을 삭제할까요?`)) return;
 
+    const btn = q("#intermediate-delete-selected-btn");
+    setButtonLoading(btn, true, "삭제 중...");
     try {
       const batch = writeBatch(db);
-      const deletedSubs = currentSubmissions.filter((sub) => checked.includes(sub.id));
-
-      deletedSubs.forEach((sub) => {
-        batch.delete(doc(db, "evaluationSubmissions", sub.id));
-      });
-
-      deletedSubs.forEach((sub) => {
-        const token = currentTokens.find((t) => t.tokenValue === sub.tokenValue);
+      const subs = currentSubmissions.filter((s) => checked.includes(s.id));
+      subs.forEach((s) => batch.delete(doc(db, "evaluationSubmissions", s.id)));
+      subs.forEach((s) => {
+        const token = currentTokens.find((t) => t.tokenValue === s.tokenValue);
         if (token) batch.delete(doc(db, "evaluationTokens", token.id));
       });
-
       await batch.commit();
       await renderAll();
-      alert("선택한 제출 데이터를 삭제했습니다.");
+      showToast("선택한 제출 데이터를 삭제했습니다.", "success");
     } catch (error) {
       console.error(error);
-      alert(`제출 데이터 삭제 중 오류가 발생했습니다.\n${error.message}`);
+      showToast(`삭제 중 오류가 발생했습니다. ${error.message}`, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   }
 
   async function deleteAllFilteredSubmissions() {
-    const type = q("#intermediate-delete-type")?.value || "";
+    const type = getTypeFromToggles("delete-type");
     const roundValue = q("#intermediate-delete-round")?.value || "";
     const round = roundValue ? Number(roundValue) : "";
     const targets = filterSubmissions(currentSubmissions, type, round);
 
-    if (targets.length === 0) {
-      alert("삭제할 데이터가 없습니다.");
-      return;
-    }
-
+    if (targets.length === 0) { showToast("삭제할 데이터가 없습니다.", "warning"); return; }
     if (!confirm(`조건에 해당하는 ${targets.length}건을 전체 삭제할까요?`)) return;
 
+    const btn = q("#intermediate-delete-all-btn");
+    setButtonLoading(btn, true, "삭제 중...");
     try {
       const batch = writeBatch(db);
-
-      targets.forEach((sub) => {
-        batch.delete(doc(db, "evaluationSubmissions", sub.id));
-      });
-
-      targets.forEach((sub) => {
-        const token = currentTokens.find((t) => t.tokenValue === sub.tokenValue);
+      targets.forEach((s) => batch.delete(doc(db, "evaluationSubmissions", s.id)));
+      targets.forEach((s) => {
+        const token = currentTokens.find((t) => t.tokenValue === s.tokenValue);
         if (token) batch.delete(doc(db, "evaluationTokens", token.id));
       });
-
       await batch.commit();
       await renderAll();
-      alert("조건에 해당하는 제출 데이터를 삭제했습니다.");
+      showToast("조건에 해당하는 제출 데이터를 삭제했습니다.", "success");
     } catch (error) {
       console.error(error);
-      alert(`조건 전체삭제 중 오류가 발생했습니다.\n${error.message}`);
+      showToast(`삭제 중 오류가 발생했습니다. ${error.message}`, "error");
+    } finally {
+      setButtonLoading(btn, false);
     }
   }
 
   function renderDetailList() {
-    const type = q("#intermediate-detail-type")?.value || "평가";
+    const type = getTypeFromToggles("detail-type");
     const roundValue = q("#intermediate-detail-round")?.value || "";
     const list = q("#intermediate-detail-list");
     const view = q("#intermediate-detail-view");
@@ -1321,34 +1503,32 @@ const db = getFirestore(app);
   }
 
   function attachMenuEvents() {
-    const page = getPage();
-    if (!page) return;
-
-    const menuButtons = qa(".menu-btn", page);
-    const sections = qa(".intermediate-section-block", page);
-
-    menuButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        menuButtons.forEach((btn) => btn.classList.remove("active"));
-        sections.forEach((section) => section.classList.add("hidden-section"));
-
-        button.classList.add("active");
-        const target = page.querySelector(`#${button.dataset.target}`);
-        if (target) target.classList.remove("hidden-section");
-      });
-    });
+    // 섹션 전환은 사이드바(admin-main.js)에서 처리
   }
 
   function attachTokenFormEvents() {
-    ["#intermediate-token-type", "#intermediate-token-count"].forEach((selector) => {
-      const el = q(selector);
-      if (el) {
-        el.addEventListener("input", updatePreview);
-        el.addEventListener("change", updatePreview);
-      }
+    qa('.toggle-btn[data-group="create-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("create-type", btn);
+        updatePreview();
+      });
     });
 
-    q("#intermediate-token-list-type-filter")?.addEventListener("change", renderRoundSelects);
+    const countEl = q("#intermediate-token-count");
+    if (countEl) {
+      countEl.addEventListener("input", updatePreview);
+      countEl.addEventListener("change", updatePreview);
+    }
+
+    qa('.toggle-btn[data-group="token-list-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("token-list-type", btn);
+        populateRoundSelect("#intermediate-token-list-round-filter", {
+          typeValue: getTypeFromToggles("token-list-type"),
+          includeAll: true,
+        });
+      });
+    });
 
     attachRoundStepper(
       "#intermediate-token-round",
@@ -1360,15 +1540,30 @@ const db = getFirestore(app);
     q("#intermediate-create-token-btn")?.addEventListener("click", createTokens);
     q("#intermediate-reset-token-btn")?.addEventListener("click", resetTokenForm);
     q("#intermediate-copy-link-btn")?.addEventListener("click", copyAllLinks);
+    q("#intermediate-save-pdf-btn")?.addEventListener("click", generateTokenPDF);
     q("#intermediate-token-search-btn")?.addEventListener("click", renderRecentTokenList);
   }
 
   function attachTokenManageEvents() {
-    q("#intermediate-token-manage-type")?.addEventListener("change", () => {
-      populateRoundSelect("#intermediate-token-manage-round", {
-        typeSelector: "#intermediate-token-manage-type",
-        includeAll: true,
+    qa('.toggle-btn[data-group="manage-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("manage-type", btn);
+        populateRoundSelect("#intermediate-token-manage-round", {
+          typeValue: getTypeFromToggles("manage-type"),
+          includeAll: true,
+        });
       });
+    });
+
+    qa('.toggle-btn[data-group="manage-submitted"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        qa('.toggle-btn[data-group="manage-submitted"]').forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+
+    q("#intermediate-token-manage-master-check")?.addEventListener("change", (e) => {
+      qa(".intermediate-token-manage-check").forEach((cb) => { cb.checked = e.target.checked; });
     });
 
     q("#intermediate-token-manage-search-btn")?.addEventListener("click", renderTokenManage);
@@ -1377,22 +1572,31 @@ const db = getFirestore(app);
   }
 
   function attachDistributionEvents() {
-    q("#intermediate-distribution-type")?.addEventListener("change", () => {
-      populateRoundSelect("#intermediate-distribution-round", {
-        typeSelector: "#intermediate-distribution-type",
-        includeAll: false,
-        placeholder: "회차 선택",
+    qa('.toggle-btn[data-group="distribution-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("distribution-type", btn);
+        populateRoundSelect("#intermediate-distribution-round", {
+          typeValue: getTypeFromToggles("distribution-type"),
+          includeAll: false,
+          placeholder: "회차 선택",
+        });
       });
     });
 
-    q("#intermediate-load-distribution-btn")?.addEventListener("click", renderDistribution);
+    q("#intermediate-load-distribution-btn")?.addEventListener("click", async () => {
+      const btn = q("#intermediate-load-distribution-btn");
+      setButtonLoading(btn, true, "조회 중...");
+      try { renderDistribution(); } finally { setButtonLoading(btn, false); }
+    });
+
+    q("#intermediate-save-chart-btn")?.addEventListener("click", saveChartAsPng);
 
     q("#intermediate-download-distribution-btn")?.addEventListener("click", () => {
-      const type = q("#intermediate-distribution-type")?.value || "평가";
+      const type = getTypeFromToggles("distribution-type");
       const roundValue = q("#intermediate-distribution-round")?.value || "";
 
       if (!roundValue) {
-        alert("회차를 선택해 주세요.");
+        showToast("회차를 선택해 주세요.", "warning");
         return;
       }
 
@@ -1402,7 +1606,7 @@ const db = getFirestore(app);
       const totalSummary = summarizeTotalScores(submissions);
 
       if (!rows.length && !totalSummary.scores.length) {
-        alert("다운로드할 데이터가 없습니다.");
+        showToast("다운로드할 데이터가 없습니다.", "warning");
         return;
       }
 
@@ -1454,11 +1658,18 @@ const db = getFirestore(app);
   }
 
   function attachDeleteEvents() {
-    q("#intermediate-delete-type")?.addEventListener("change", () => {
-      populateRoundSelect("#intermediate-delete-round", {
-        typeSelector: "#intermediate-delete-type",
-        includeAll: true,
+    qa('.toggle-btn[data-group="delete-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("delete-type", btn);
+        populateRoundSelect("#intermediate-delete-round", {
+          typeValue: getTypeFromToggles("delete-type"),
+          includeAll: true,
+        });
       });
+    });
+
+    q("#intermediate-delete-master-check")?.addEventListener("change", (e) => {
+      qa(".intermediate-delete-check").forEach((cb) => { cb.checked = e.target.checked; });
     });
 
     q("#intermediate-search-delete-target-btn")?.addEventListener("click", renderDeleteList);
@@ -1467,15 +1678,51 @@ const db = getFirestore(app);
   }
 
   function attachDetailEvents() {
-    q("#intermediate-detail-type")?.addEventListener("change", () => {
-      populateRoundSelect("#intermediate-detail-round", {
-        typeSelector: "#intermediate-detail-type",
-        includeAll: false,
-        placeholder: "회차 선택",
+    qa('.toggle-btn[data-group="detail-type"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activateSingleToggle("detail-type", btn);
+        populateRoundSelect("#intermediate-detail-round", {
+          typeValue: getTypeFromToggles("detail-type"),
+          includeAll: false,
+          placeholder: "회차 선택",
+        });
       });
     });
 
-    q("#intermediate-load-detail-list-btn")?.addEventListener("click", renderDetailList);
+    q("#intermediate-load-detail-list-btn")?.addEventListener("click", async () => {
+      const btn = q("#intermediate-load-detail-list-btn");
+      setButtonLoading(btn, true, "조회 중...");
+      try { renderDetailList(); } finally { setButtonLoading(btn, false); }
+    });
+
+    const page = getPage();
+    page?.addEventListener("keydown", (e) => {
+      const list = q("#intermediate-detail-list");
+      if (!list) return;
+      const items = Array.from(list.querySelectorAll(".intermediate-detail-item"));
+      if (!items.length) return;
+
+      const active = list.querySelector(".intermediate-detail-item.is-active");
+      let idx = active ? items.indexOf(active) : -1;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        idx = Math.min(idx + 1, items.length - 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        idx = Math.max(idx - 1, 0);
+      } else if (e.key === "Enter" && idx >= 0) {
+        items[idx].click();
+        return;
+      } else {
+        return;
+      }
+
+      items.forEach((el) => el.classList.remove("is-active"));
+      items[idx].classList.add("is-active");
+      items[idx].scrollIntoView({ block: "nearest" });
+      showSubmissionDetail(items[idx].dataset.id);
+    });
   }
 
   async function renderAll() {
@@ -1499,6 +1746,9 @@ const db = getFirestore(app);
     attachDistributionEvents();
     attachDeleteEvents();
     attachDetailEvents();
+
+    window.currentRefreshFn = renderAll;
+
     await renderAll();
   }
 

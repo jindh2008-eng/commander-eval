@@ -6,6 +6,7 @@
   <title>평가 결과 관리자</title>
   <link rel="stylesheet" href="admin.css" />
   <style>
+  /* ── 로그인 게이트 ── */
   .auth-gate {
     min-height: 100vh;
     display: flex;
@@ -50,9 +51,7 @@
     cursor: pointer;
   }
 
-  .auth-login-btn:hover {
-    background: #173b60;
-  }
+  .auth-login-btn:hover { background: #173b60; }
 
   .auth-message {
     margin: 18px 0 0;
@@ -60,192 +59,98 @@
     font-size: 14px;
     min-height: 20px;
   }
-
-  .admin-top-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  .admin-user-box {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .admin-user-email {
-    font-size: 14px;
-    font-weight: 700;
-    opacity: 0.95;
-  }
-
-  .admin-logout-btn {
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.14);
-    color: #ffffff;
-    padding: 10px 14px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .admin-logout-btn:hover {
-    background: rgba(255, 255, 255, 0.22);
-  }
-</style>
+  </style>
 </head>
 <body>
+
+  <!-- 로그인 게이트 -->
   <div id="auth-gate" class="auth-gate">
     <div class="auth-card">
       <h1 class="auth-title">평가 관리자 로그인</h1>
-      <p class="auth-desc">
-        허용된 관리자 계정으로 로그인해야 관리자 화면에 접근할 수 있습니다.
-      </p>
-      <button type="button" id="admin-login-btn" class="auth-login-btn">
-        Google 계정으로 로그인
-      </button>
+      <p class="auth-desc">허용된 관리자 계정으로 로그인해야 관리자 화면에 접근할 수 있습니다.</p>
+      <button type="button" id="admin-login-btn" class="auth-login-btn">Google 계정으로 로그인</button>
       <p id="auth-message" class="auth-message"></p>
     </div>
   </div>
 
+  <!-- 관리자 앱 -->
   <div id="admin-app" style="display: none;">
-    <div class="admin-shell">
-      <header class="admin-header">
-        <div class="admin-header-inner">
-          <div class="admin-top-row">
-            <div>
-              <h1 class="admin-title">평가 결과 관리자</h1>
-              <p class="admin-subtitle">과정별 평가 결과 조회 및 관리</p>
-            </div>
+    <div class="admin-layout">
 
-            <div class="admin-user-box">
-              <div class="admin-user-email" id="admin-user-email"></div>
-              <button type="button" id="admin-logout-btn" class="admin-logout-btn">
-                로그아웃
-              </button>
-            </div>
+      <!-- 사이드바 -->
+      <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand-title">지휘관 평가<br>관리자</div>
+        </div>
+
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">과정</div>
+          <nav class="sidebar-course-nav">
+            <button type="button" class="sidebar-course-btn active"
+              data-course="초급" data-page="pages/admin-beginner.html">
+              초급과정
+            </button>
+            <button type="button" class="sidebar-course-btn"
+              data-course="중급" data-page="pages/admin-intermediate.html">
+              중급과정
+            </button>
+            <button type="button" class="sidebar-course-btn"
+              data-course="고급" data-page="pages/admin-advanced.html">
+              고급과정
+            </button>
+          </nav>
+        </div>
+
+        <div class="sidebar-group sidebar-menu-group">
+          <div class="sidebar-group-label">메뉴</div>
+          <nav class="sidebar-section-nav" id="sidebar-section-nav">
+            <!-- JS로 동적 렌더링 -->
+          </nav>
+        </div>
+
+        <div class="sidebar-group">
+          <div class="sidebar-group-label">분석</div>
+          <nav>
+            <button type="button" class="sidebar-section-btn" id="sidebar-analysis-btn">📊 평가분석</button>
+          </nav>
+        </div>
+
+      <div class="sidebar-footer">
+          <div class="sidebar-user-email" id="admin-user-email"></div>
+          <button type="button" id="admin-logout-btn" class="sidebar-logout-btn">로그아웃</button>
+        </div>
+      </aside>
+
+      <!-- 메인 영역 -->
+      <div class="admin-main">
+        <header class="admin-topbar">
+          <div class="admin-topbar-breadcrumb">
+            <span id="topbar-course" class="topbar-course">초급과정</span>
+            <span class="topbar-sep">›</span>
+            <span id="topbar-section" class="topbar-section">-</span>
           </div>
-        </div>
-      </header>
+          <button type="button" id="global-refresh-btn" class="topbar-refresh-btn" title="데이터 새로고침">↺</button>
+        </header>
 
-      <section class="course-tab-section">
-        <div class="course-tabs" role="tablist" aria-label="과정 선택">
-          <button
-            type="button"
-            class="course-tab active"
-            data-page="pages/admin-beginner.html"
-            data-course="초급"
-            role="tab"
-            aria-selected="true"
-          >
-            초급과정 관리자
-          </button>
-
-          <button
-            type="button"
-            class="course-tab"
-            data-page="pages/admin-intermediate.html"
-            data-course="중급"
-            role="tab"
-            aria-selected="false"
-          >
-            중급과정 관리자
-          </button>
-
-          <button
-            type="button"
-            class="course-tab"
-            data-page="pages/admin-advanced.html"
-            data-course="고급"
-            role="tab"
-            aria-selected="false"
-          >
-            고급과정 관리자
-          </button>
-        </div>
-      </section>
-
-      <main class="admin-content">
-        <section class="content-frame">
+        <main class="admin-content">
           <div id="course-content" class="course-content">
             <div class="loading-box">로그인 후 관리자 화면이 표시됩니다.</div>
           </div>
-        </section>
-      </main>
+        </main>
+      </div>
+
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="admin-auth.js"></script>
   <script type="module" src="admin-beginner.js"></script>
   <script type="module" src="admin-intermediate.js"></script>
+  <script type="module" src="admin-analysis.js"></script>
   <script src="admin-main.js"></script>
 </body>
-  
-<!-- <body>
-  <div class="admin-shell">
-    <header class="admin-header">
-      <div class="admin-header-inner">
-        <h1 class="admin-title">평가 결과 관리자</h1>
-        <p class="admin-subtitle">과정별 평가 결과 조회 및 관리</p>
-      </div>
-    </header>
-
-    <section class="course-tab-section">
-      <div class="course-tabs" role="tablist" aria-label="과정 선택">
-        <button
-          type="button"
-          class="course-tab active"
-          data-page="pages/admin-beginner.html"
-          data-course="초급"
-          role="tab"
-          aria-selected="true"
-        >
-          초급과정 관리자
-        </button>
-
-        <button
-          type="button"
-          class="course-tab"
-          data-page="pages/admin-intermediate.html"
-          data-course="중급"
-          role="tab"
-          aria-selected="false"
-        >
-          중급과정 관리자
-        </button>
-
-        <button
-          type="button"
-          class="course-tab"
-          data-page="pages/admin-advanced.html"
-          data-course="고급"
-          role="tab"
-          aria-selected="false"
-        >
-          고급과정 관리자
-        </button>
-      </div>
-    </section>
-
-    <main class="admin-content">
-      <section class="content-frame">
-        <div id="course-content" class="course-content">
-          <div class="loading-box">초급과정 관리자 화면을 불러오는 중입니다.</div>
-        </div>
-      </section>
-    </main>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="admin-beginner.js"></script>
-  <script type="module" src="admin-intermediate.js"></script>
-  <script src="admin-main.js"></script>
-
-</body> -->
 </html>

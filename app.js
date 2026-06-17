@@ -172,6 +172,39 @@ function gradeLabelToKorean(grade) {
   return "하";
 }
 
+function enableReviewLink() {
+  const link = document.getElementById("reviewLink");
+  if (!link || !currentToken) return;
+  link.href = `eval-review/review.html?token=${encodeURIComponent(currentToken)}`;
+  link.classList.remove("disabled");
+  link.removeAttribute("aria-disabled");
+}
+
+function updateAllCategoryProgress() {
+  if (!currentLevel) return;
+  const grouped = groupItemsByCategory(sheetData[currentLevel].items);
+
+  Object.entries(grouped).forEach(([category, items]) => {
+    const progressEl = document.querySelector(`.group-progress[data-category="${CSS.escape(category)}"]`);
+    if (!progressEl) return;
+
+    const checkedCount = items.filter(
+      (item) => document.querySelector(`input[name="item_${item.index}"]:checked`) !== null
+    ).length;
+
+    progressEl.textContent = `${checkedCount} / ${items.length}`;
+    progressEl.classList.toggle("is-complete", checkedCount === items.length);
+  });
+}
+
+function syncVisualState() {
+  document.querySelectorAll(".score-item").forEach((el) => el.classList.remove("is-checked"));
+  document.querySelectorAll(".item-grade:checked").forEach((radio) => {
+    radio.closest(".score-item")?.classList.add("is-checked");
+  });
+  updateAllCategoryProgress();
+}
+
 function calculateCurrentScore() {
   let total = 0;
 
@@ -209,6 +242,7 @@ function restoreSelections() {
   });
 
   calculateCurrentScore();
+  syncVisualState();
 }
 
 function updateStickyOffset() {
@@ -237,17 +271,20 @@ function renderTable(level) {
   const html = `
     <div class="score-list">
       ${Object.entries(grouped).map(([category, items]) => {
-        const isCollapsed = viewMode === "app" && collapsedCategories.has(category);
+        const isCollapsed = collapsedCategories.has(category);
 
         return `
           <div class="group-card ${isCollapsed ? "collapsed" : ""}" data-category="${escapeHtml(category)}">
             <button
               type="button"
-              class="group-header ${viewMode === "app" ? "app-collapsible" : ""}"
+              class="group-header app-collapsible"
               data-category="${escapeHtml(category)}"
             >
-              <span>${escapeHtml(category)}</span>
-              <span class="group-arrow">${viewMode === "app" ? (isCollapsed ? "▸" : "▾") : ""}</span>
+              <span class="group-header-left">
+                <span>${escapeHtml(category)}</span>
+                <span class="group-progress" data-category="${escapeHtml(category)}">0 / ${items.length}</span>
+              </span>
+              <span class="group-arrow">${isCollapsed ? "▸" : "▾"}</span>
             </button>
 
             <div class="group-body">
@@ -287,7 +324,9 @@ function renderTable(level) {
 
   document.querySelectorAll(".item-grade").forEach((radio) => {
     radio.addEventListener("change", () => {
+      radio.closest(".score-item")?.classList.add("is-checked");
       calculateCurrentScore();
+      updateAllCategoryProgress();
       updateStickyOffset();
     });
   });
@@ -356,12 +395,14 @@ function clearSelections() {
   document.querySelectorAll(".item-grade").forEach((radio) => {
     radio.checked = false;
   });
+  document.querySelectorAll(".score-item").forEach((el) => el.classList.remove("is-checked"));
 
   commentEl.value = "";
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
   window.__savedSelections = {};
 
+  updateAllCategoryProgress();
   updateStickyOffset();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -409,6 +450,7 @@ async function validateTokenAndSetup() {
     tokenInfoEl.textContent = "이미 제출 완료된 링크입니다. 재제출은 허용되지 않습니다.";
     tokenInfoEl.style.color = "red";
     setUiEnabled(false);
+    enableReviewLink();
     return;
   }
 
@@ -499,6 +541,7 @@ submitBtn.addEventListener("click", async () => {
     tokenInfoEl.textContent = "제출 완료된 링크입니다. 재제출은 허용되지 않습니다.";
     tokenInfoEl.style.color = "green";
     setUiEnabled(false);
+    enableReviewLink();
 
     updateStickyOffset();
     window.scrollTo({ top: 0, behavior: "smooth" });

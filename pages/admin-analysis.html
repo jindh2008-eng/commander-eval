@@ -1,0 +1,94 @@
+<div class="page-card" data-page="analysis">
+  <section class="admin-section-block">
+    <div class="section-header-row">
+      <h3 class="section-title">회차별 평가 결과 분석</h3>
+      <p class="section-desc">
+        과정과 회차 범위를 선택하면 회차별 평균 점수 순위를 확인하고,
+        성적표와 항목별 평균 점수를 파일로 출력할 수 있습니다.
+      </p>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-item">
+        <span class="filter-label">과정</span>
+        <select id="analysis-course" class="filter-select">
+          <option value="초급">초급</option>
+          <option value="중급">중급</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <span class="filter-label">조회대상</span>
+        <div class="toggle-group">
+          <button type="button" class="toggle-btn active" data-group="analysis-type" data-value="평가">평가</button>
+          <button type="button" class="toggle-btn" data-group="analysis-type" data-value="연습">연습</button>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <span class="filter-label">회차 범위</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <select id="analysis-round-from" class="filter-select"></select>
+          <span style="color:#667085;font-size:13px;">부터</span>
+          <select id="analysis-round-to" class="filter-select"></select>
+          <span style="color:#667085;font-size:13px;">까지</span>
+        </div>
+      </div>
+
+      <div class="filter-item filter-item-action">
+        <button type="button" class="primary-btn" id="analysis-search-btn">분석조회</button>
+        <button type="button" class="secondary-btn" id="analysis-print-btn">순위표 인쇄</button>
+        <button type="button" class="secondary-btn" id="analysis-download-btn">항목별 평균 다운로드</button>
+      </div>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="info-grid analysis-info-grid" id="analysis-stats" style="display:none;">
+      <div class="info-box">
+        <div class="info-label">회차 범위</div>
+        <div class="info-value" id="analysis-stat-range">-</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">제출 건수</div>
+        <div class="info-value" id="analysis-stat-count">-</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">전체 평균</div>
+        <div class="info-value" id="analysis-stat-avg">-</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">최고 평균 회차</div>
+        <div class="info-value" id="analysis-stat-best">-</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">최저 평균 회차</div>
+        <div class="info-value" id="analysis-stat-worst">-</div>
+      </div>
+      <div class="info-box">
+        <div class="info-label">분석 회차</div>
+        <div class="info-value" id="analysis-stat-rounds">-</div>
+      </div>
+    </div>
+
+    <!-- 순위 테이블 -->
+    <div class="sub-card" id="analysis-ranking" style="display:none;">
+      <h4>순위</h4>
+      <p id="analysis-ranking-desc" style="color:#667085;margin:0 0 14px;font-size:14px;"></p>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>회차</th>
+              <th>평균 점수</th>
+              <th>제출 건수</th>
+            </tr>
+          </thead>
+          <tbody id="analysis-ranking-body">
+            <tr><td colspan="4" class="empty-cell">분석 결과가 없습니다.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>
