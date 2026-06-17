@@ -446,6 +446,11 @@
   </style>
 </head>
 <body>
+  <script>
+    if (!new URLSearchParams(window.location.search).get("token")) {
+      window.location.replace("admin-main.html");
+    }
+  </script>
   <div class="top-fixed-wrap">
     <header class="topbar">
       <div class="topbar-inner">
