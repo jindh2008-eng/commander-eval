@@ -145,6 +145,12 @@ function setUiEnabled(enabled) {
   document.querySelectorAll(".item-grade").forEach((radio) => {
     radio.disabled = !enabled;
   });
+  document.querySelectorAll(".item-comment").forEach((ta) => {
+    ta.disabled = !enabled;
+  });
+  document.querySelectorAll(".comment-toggle-btn").forEach((btn) => {
+    btn.disabled = !enabled;
+  });
 
   if (commentEl) commentEl.disabled = !enabled;
   if (resetBtn) resetBtn.disabled = !enabled;
@@ -230,7 +236,12 @@ function saveSelections() {
   document.querySelectorAll(".item-grade:checked").forEach((radio) => {
     selections[radio.name] = radio.value;
   });
+  const comments = {};
+  document.querySelectorAll(".item-comment").forEach((ta) => {
+    if (ta.value.trim()) comments[ta.name] = ta.value;
+  });
   window.__savedSelections = selections;
+  window.__savedComments = comments;
 }
 
 function restoreSelections() {
@@ -240,6 +251,19 @@ function restoreSelections() {
     const target = document.querySelector(`input[name="${name}"][value="${value}"]`);
     if (target) target.checked = true;
   });
+
+  if (window.__savedComments) {
+    Object.entries(window.__savedComments).forEach(([name, value]) => {
+      const ta = document.querySelector(`textarea[name="${name}"]`);
+      if (ta) {
+        ta.value = value;
+        const wrap = ta.closest(".item-comment-wrap");
+        if (wrap) wrap.style.display = "";
+        const btn = ta.closest(".score-item")?.querySelector(".comment-toggle-btn");
+        if (btn) btn.classList.add("has-comment");
+      }
+    });
+  }
 
   calculateCurrentScore();
   syncVisualState();
@@ -289,7 +313,7 @@ function renderTable(level) {
 
             <div class="group-body">
               ${items.map((item) => `
-                <div class="score-item">
+                <div class="score-item" data-item-index="${item.index}">
                   <div class="score-item-head">
                     <div class="behavior-title">${escapeHtml(item.behavior)}</div>
                     <div class="score-meta">배점: ${item.score}점</div>
@@ -310,6 +334,14 @@ function renderTable(level) {
                       <input type="radio" class="item-grade" name="item_${item.index}" value="low" data-score="${item.score}" />
                       <span class="grade-label">하</span>
                     </label>
+
+                    <button type="button" class="comment-toggle-btn" data-target="comment_${item.index}" title="의견 추가">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                  </div>
+
+                  <div class="item-comment-wrap" id="comment_wrap_${item.index}" style="display:none;">
+                    <textarea class="item-comment" id="comment_${item.index}" name="comment_${item.index}" placeholder="평가관 의견 입력 (선택)" rows="2"></textarea>
                   </div>
                 </div>
               `).join("")}
@@ -328,6 +360,33 @@ function renderTable(level) {
       calculateCurrentScore();
       updateAllCategoryProgress();
       updateStickyOffset();
+    });
+  });
+
+  document.querySelectorAll(".comment-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = btn.closest(".score-item");
+      const idx = item?.dataset.itemIndex;
+      if (!idx) return;
+      const wrap = document.getElementById(`comment_wrap_${idx}`);
+      if (!wrap) return;
+      const isOpen = wrap.style.display !== "none";
+      wrap.style.display = isOpen ? "none" : "";
+      btn.classList.toggle("has-comment", !isOpen);
+      if (!isOpen) {
+        const ta = wrap.querySelector("textarea");
+        if (ta) ta.focus();
+      }
+      updateStickyOffset();
+    });
+  });
+
+  document.querySelectorAll(".item-comment").forEach((ta) => {
+    ta.addEventListener("input", () => {
+      const item = ta.closest(".score-item");
+      const btn = item?.querySelector(".comment-toggle-btn");
+      if (btn) btn.classList.toggle("has-comment", ta.value.trim().length > 0);
     });
   });
 
@@ -379,8 +438,10 @@ function collectItemResults() {
   return sheetData[currentLevel].items.map((item, index) => {
     const checked = document.querySelector(`input[name="item_${index}"]:checked`);
     const selectedGrade = checked.value;
+    const commentEl = document.getElementById(`comment_${index}`);
+    const itemComment = commentEl ? commentEl.value.trim() : "";
 
-    return {
+    const result = {
       category: item.category,
       behavior: item.behavior,
       maxScore: item.score,
@@ -388,6 +449,8 @@ function collectItemResults() {
       selectedGradeLabel: gradeLabelToKorean(selectedGrade),
       selectedScore: gradeLabelToScore(item.score, selectedGrade)
     };
+    if (itemComment) result.comment = itemComment;
+    return result;
   });
 }
 
@@ -396,11 +459,15 @@ function clearSelections() {
     radio.checked = false;
   });
   document.querySelectorAll(".score-item").forEach((el) => el.classList.remove("is-checked"));
+  document.querySelectorAll(".item-comment").forEach((ta) => { ta.value = ""; });
+  document.querySelectorAll(".item-comment-wrap").forEach((w) => { w.style.display = "none"; });
+  document.querySelectorAll(".comment-toggle-btn").forEach((b) => { b.classList.remove("has-comment"); });
 
   commentEl.value = "";
   currentScoreEl.textContent = "0";
   statusTextEl.textContent = "";
   window.__savedSelections = {};
+  window.__savedComments = {};
 
   updateAllCategoryProgress();
   updateStickyOffset();
